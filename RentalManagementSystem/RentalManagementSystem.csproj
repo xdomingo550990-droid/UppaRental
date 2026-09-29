@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Guna.UI2.WinForms" Version="2.0.4.8" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Resources\Icons\houseLogo.png" />
     <Resource Include="Resources\Images\houseImage1.jpg" />
     <Resource Include="Resources\Images\houseImage2.jpg" />

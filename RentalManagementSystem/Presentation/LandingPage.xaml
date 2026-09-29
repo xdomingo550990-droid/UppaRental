@@ -23,10 +23,10 @@
             <TextBlock Grid.Column="0"
                        Text="Uppa."
                        FontSize="34"
-                       FontWeight="Bold"
+                      FontWeight="Bold"
                        Foreground="#1B3A2A"
                        VerticalAlignment="Top"
-                       Margin="50,21,0,0"/>
+                       Margin="50,22,0,0"/>
 
 
             <!-- Navigation Links -->
@@ -83,7 +83,8 @@
                         BorderThickness="0"
                         FontSize="21"
                        FontWeight="SemiBold"
-                         Foreground="#27894C"/>
+                         Foreground="#27894C"
+                        Click="LoginButton_Click"/>
 
                 <Button Content="Sign Up"
                         Margin="10,0"
@@ -93,7 +94,7 @@
                         FontWeight="SemiBold"/>
 
             </StackPanel>
-            <Image Margin="0,30,205,10" Source="/Resources/Icons/houseLogo.png" Stretch="Fill"/>
+            <Image Margin="0,25,205,10" Source="/Resources/Icons/houseLogo.png" Stretch="Fill"/>
 
         </Grid>
 
@@ -110,7 +111,7 @@
             <!-- Left Side: Text -->
             <StackPanel Grid.Column="0"
                         VerticalAlignment="Top"
-                        Margin="30,80,30,0">
+                        Margin="30,40,30,0">
 
                 <TextBlock Text="Ready to"
                            FontSize="48"

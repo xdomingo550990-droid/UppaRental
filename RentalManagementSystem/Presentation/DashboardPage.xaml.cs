@@ -13,23 +13,18 @@ using System.Windows.Shapes;
 namespace RentalManagementSystem.Presentation
 {
     /// <summary>
-    /// Interaction logic for LandingPage.xaml
+    /// Interaction logic for DashboardPage.xaml
     /// </summary>
-    public partial class LandingPage : Window
+    public partial class DashboardPage : Window
     {
-        public LandingPage()
+        public DashboardPage()
         {
             InitializeComponent();
         }
-        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        private void LogOutButton_Click(object sender, RoutedEventArgs e)
         {
-            // Instantiate the Dashboard page window
-            DashboardPage dashboard = new DashboardPage();
-
-            // Show the Dashboard window
-            dashboard.Show();
-
-            // Close the current LandingPage window
+            LandingPage landingPage = new LandingPage();
+            landingPage.Show();
             this.Close();
         }
     }

@@ -158,7 +158,7 @@
         </Grid>
 
         <!-- MAIN CONTENT AREA -->
-        <Border Grid.Column="1" Background="#D5E2D7" CornerRadius="20,0,0,0" Margin="0,10,0,0">
+        <Border Grid.Column="1" CornerRadius="20,0,0,0" Margin="0,10,0,0" Background="#FFD5E2D7">
             <Grid Margin="24,16,24,24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -177,28 +177,130 @@
                     <TextBlock Grid.Column="0" Text="Overview" FontSize="26" FontWeight="Bold" Foreground="#1E3223" VerticalAlignment="Center"/>
 
                     <!-- Search Bar -->
-                    <Border Grid.Column="1" HorizontalAlignment="Right" Width="280" Height="38" Background="#E8EFE9" CornerRadius="19" Padding="14,0" Margin="0,0,20,0">
+                    <Border Grid.Column="1" HorizontalAlignment="Right" Width="350" Height="38" Background="#E8EFE9" CornerRadius="19" Padding="14,0" Margin="0,0,20,0">
                         <Grid VerticalAlignment="Center">
                             <TextBlock Text="Search..." Foreground="#8C9E90" FontSize="13" VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
 
-                    <!-- Window Control Buttons Placeholder -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="—" FontSize="12" Foreground="#1E3223" Margin="8,0"/>
-                        <TextBlock Text="▢" FontSize="12" Foreground="#1E3223" Margin="8,0"/>
-                        <TextBlock Text="✕" FontSize="12" Foreground="#1E3223" Margin="8,0"/>
-                    </StackPanel>
+                    
                 </Grid>
 
                 <!-- Main Overview Viewport -->
                 <Grid Grid.Row="1">
-                    <TextBlock Text="Overview Content View" 
-                               FontSize="32" 
-                               FontWeight="Bold" 
-                               Foreground="#C07156" 
-                               HorizontalAlignment="Center" 
-                               VerticalAlignment="Center"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- 1. Four Horizontal Summary Cards -->
+                    <UniformGrid Grid.Row="0" Columns="4" Height="100" Margin="0,0,0,24">
+
+                        <!-- Card 1: Revenue -->
+                        <Border Margin="0,0,12,0" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Color="#FAF3DA" Offset="0"/>
+                                    <GradientStop Color="#F0E4BE" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Margin="18,14">
+                                <TextBlock Text="Revenue" FontSize="13" FontWeight="SemiBold" Foreground="#607464"/>
+                                <TextBlock Text="₱120,000" FontSize="22" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 2: Total Units -->
+                        <Border Margin="6,0,6,0" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Color="#E4EEE3" Offset="0"/>
+                                    <GradientStop Color="#D0E0CE" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Margin="18,14">
+                                <TextBlock Text="Total Units" FontSize="13" FontWeight="SemiBold" Foreground="#607464"/>
+                                <TextBlock Text="20" FontSize="24" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 3: Available -->
+                        <Border Margin="6,0,6,0" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Color="#D7EBDD" Offset="0"/>
+                                    <GradientStop Color="#A2CBA8" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Margin="18,14">
+                                <TextBlock Text="Available" FontSize="13" FontWeight="SemiBold" Foreground="#607464"/>
+                                <TextBlock Text="8" FontSize="24" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Card 4: Occupied -->
+                        <Border Margin="12,0,0,0" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                    <GradientStop Color="#FCE4DC" Offset="0"/>
+                                    <GradientStop Color="#F2CDC3" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel Margin="18,14">
+                                <TextBlock Text="Occupied" FontSize="13" FontWeight="SemiBold" Foreground="#607464"/>
+                                <TextBlock Text="7" FontSize="24" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                    </UniformGrid>
+
+                    <!-- 2. Room Status Section Title -->
+                    <TextBlock Grid.Row="1" Text="ROOM STATUS" FontSize="15" FontWeight="Bold" Foreground="#1E3223" Margin="2,0,0,12"/>
+
+                    <!-- 3. Room Status Data Grid Table -->
+                    <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="12">
+                        <DataGrid x:Name="dgRoomStatus" 
+                  AutoGenerateColumns="False" 
+                  CanUserAddRows="False" 
+                  IsReadOnly="True" 
+                  HeadersVisibility="Column"
+                  Background="Transparent" 
+                  BorderThickness="0" 
+                  RowHeight="40"
+                  GridLinesVisibility="Horizontal" 
+                  HorizontalGridLinesBrush="#EFEFEF">
+
+                            <DataGrid.ColumnHeaderStyle>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="#E8EFE9"/>
+                                    <Setter Property="Foreground" Value="#1E3223"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Height" Value="38"/>
+                                    <Setter Property="Padding" Value="12,0"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </DataGrid.ColumnHeaderStyle>
+
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Padding" Value="6,0"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#F5F8F5"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
+
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Room No." Binding="{Binding RoomNo}" Width="*"/>
+                                <DataGridTextColumn Header="Room Type" Binding="{Binding RoomType}" Width="*"/>
+                                <DataGridTextColumn Header="Monthly Rate" Binding="{Binding MonthlyRate}" Width="*"/>
+                                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
                 </Grid>
             </Grid>
         </Border>

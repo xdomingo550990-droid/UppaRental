@@ -4,26 +4,193 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800">
-    <Grid>
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <!-- Top Action Button 1: Dark Green -->
+        <Style x:Key="HeaderPrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#1E3223"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2A4531"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Top Action Button 2: Medium Forest Green -->
+        <Style x:Key="HeaderSecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#00695C"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#004D40"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Filter Pill Option Button -->
+        <Style x:Key="FilterPillStyle" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#1E3223"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="pillBorder" Background="{TemplateBinding Background}" CornerRadius="12" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/> <!-- 1. Header with Buttons -->
+            <RowDefinition Height="Auto"/> <!-- 2. Filter Pills & Search Card -->
+            <RowDefinition Height="*"/>    <!-- 3. Table Card -->
         </Grid.RowDefinitions>
 
-        <!-- Section Title -->
-        <TextBlock Text="UNITS &amp; ROOMS MANAGEMENT" 
-                   FontSize="15" FontWeight="Bold" Foreground="#1E3223" Margin="2,0,0,12"/>
+        <!-- 1. Header Title & Subtitle + Action Buttons -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- Main Content Area for Units -->
-        <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="16">
+            <!-- Title & Subtitle -->
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <TextBlock Text="Units: Room Inventory" FontSize="22" FontWeight="Bold" Foreground="#1E3223"/>
+                <TextBlock Text="Manage floor plans, active leases, and unit availability." FontSize="13" Foreground="#607464" Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <!-- Top Right Action Buttons -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Content="+ Add Room" Style="{StaticResource HeaderPrimaryButtonStyle}" Margin="0,0,10,0"/>
+                <Button Content="▤ Add Floor" Style="{StaticResource HeaderSecondaryButtonStyle}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 2. Compact Filter Pills & Search Bar Container Card -->
+        <Border Grid.Row="1" Background="White" CornerRadius="12" Padding="16" Margin="0,0,0,20">
             <Border.Effect>
-                <DropShadowEffect Color="#000000" Direction="270" ShadowDepth="4" BlurRadius="10" Opacity="0.10"/>
+                <DropShadowEffect Color="#000000" Direction="270" ShadowDepth="3" BlurRadius="10" Opacity="0.08"/>
             </Border.Effect>
-            
-            <TextBlock Text="Units / Rooms table or grid will go here..." 
-                       FontSize="16" Foreground="#607464" 
-                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+            <StackPanel>
+                <!-- Compact Status Pills -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                    <!-- All Rooms Pill -->
+                    <RadioButton Content="View All Rooms (6)" Style="{StaticResource FilterPillStyle}" IsChecked="True" Background="#1E3223" Foreground="White"/>
+                    
+                    <!-- Available Pill -->
+                    <RadioButton Content="Available (2)" Style="{StaticResource FilterPillStyle}" Background="#D0F0C0" Foreground="#004225"/>
+                    
+                    <!-- Reserved Pill -->
+                    <RadioButton Content="Reserved (1)" Style="{StaticResource FilterPillStyle}" Background="#FFF3C4" Foreground="#8C6B00"/>
+                    
+                    <!-- Occupied Pill -->
+                    <RadioButton Content="Occupied (3)" Style="{StaticResource FilterPillStyle}" Background="#FFDCD8" Foreground="#A81C0C"/>
+                </StackPanel>
+
+                <!-- Search Input Box -->
+                <Border Background="#F7F9F7" BorderBrush="#E0E6E1" BorderThickness="1" CornerRadius="8" Height="38" Padding="10,0">
+                    <Grid VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔍 " FontSize="12" Foreground="#88988B" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBox Grid.Column="1" Background="Transparent" BorderThickness="0" FontSize="13" Foreground="#1E3223" VerticalAlignment="Center" Text="Search Room #, Floor or Type..."/>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 3. Units Inventory DataGrid Card -->
+        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="16">
+            <Border.Effect>
+                <DropShadowEffect Color="#000000" Direction="270" ShadowDepth="4" BlurRadius="12" Opacity="0.08"/>
+            </Border.Effect>
+
+            <DataGrid x:Name="dgUnits" 
+                      AutoGenerateColumns="False" 
+                      CanUserAddRows="False" 
+                      IsReadOnly="True" 
+                      HeadersVisibility="Column"
+                      Background="Transparent" 
+                      BorderThickness="0" 
+                      RowHeight="44"
+                      GridLinesVisibility="Horizontal" 
+                      HorizontalGridLinesBrush="#F0F4F1">
+
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#5C7060"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="FontSize" Value="11"/>
+                        <Setter Property="Height" Value="36"/>
+                        <Setter Property="Padding" Value="8,0"/>
+                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                        <Setter Property="BorderBrush" Value="#E0E6E1"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Padding" Value="4,0"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F7F9F7"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="ROOM #" Binding="{Binding RoomNo}" Width="130"/>
+                    <DataGridTextColumn Header="FLOOR LEVEL" Binding="{Binding Floor}" Width="130"/>
+                    <DataGridTextColumn Header="ROOM TYPE" Binding="{Binding RoomType}" Width="*"/>
+                    <DataGridTextColumn Header="MONTHLY RENT" Binding="{Binding MonthlyRate}" Width="150"/>
+                    <DataGridTextColumn Header="STATUS" Binding="{Binding Status}" Width="140"/>
+                    <DataGridTextColumn Header="ACTIONS" Binding="{Binding Actions}" Width="100"/>
+                </DataGrid.Columns>
+            </DataGrid>
         </Border>
     </Grid>
 </UserControl>

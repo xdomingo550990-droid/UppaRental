@@ -181,7 +181,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Page Title -->
-                     <TextBlock x:Name="txtPageTitle" Grid.Column="0" Text="Overview" FontSize="26" FontWeight="Bold" Foreground="#1E3223" VerticalAlignment="Center"/>
+                     <TextBlock x:Name="txtPageTitle"  Grid.Column="0" Text="Overview" FontSize="26" FontWeight="Bold" Foreground="#1E3223" VerticalAlignment="Center"/>
 
                     <!-- Search Bar -->
                     <Border Grid.Column="1" HorizontalAlignment="Right" Width="350" Height="38" Background="#E8EFE9" CornerRadius="19" Padding="14,0" Margin="0,0,20,0">

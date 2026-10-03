@@ -29,7 +29,7 @@ namespace RentalManagementSystem.Presentation
         private void SignUpButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: false);
 
         // Role picked during Sign Up ("Tenant" or "Landlord"); null if the user came in through Login
-        public string SelectedUserType { get; private set; }
+        public string? SelectedUserType { get; private set; } = string.Empty;
 
         private void OpenAuth(bool login)
         {
@@ -91,17 +91,11 @@ namespace RentalManagementSystem.Presentation
 
         private void Auth_CloseRequested(object sender, EventArgs e) => CloseAuth();
 
-        // Login succeeded -> your original behavior: open Dashboard, close this window
+        // Login succeeded -> open Dashboard, close this window
         private void Auth_LoginSucceeded(object sender, EventArgs e)
         {
-            // SelectedUserType is "Tenant" or "Landlord" if you need it on the Dashboard
-            // Instantiate the Dashboard page window
             DashboardPage dashboard = new DashboardPage();
-
-            // Show the Dashboard window
             dashboard.Show();
-
-            // Close the current LandingPage window
             this.Close();
         }
     }

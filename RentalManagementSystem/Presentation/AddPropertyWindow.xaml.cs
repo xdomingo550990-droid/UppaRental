@@ -1,0 +1,252 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+
+namespace RentalManagementSystem.Presentation
+{
+    public class PropertyFormResult
+    {
+        public string Name { get; set; } = "";
+        public string Floor { get; set; } = "";
+        public string RoomType { get; set; } = "";
+        public decimal MonthlyRent { get; set; }
+        public decimal SecurityDeposit { get; set; }
+        public string Status { get; set; } = "";
+        public bool IsDraft { get; set; }
+        public bool WaterIncluded { get; set; }
+        public bool ElectricityMetered { get; set; }
+        public bool WifiIncluded { get; set; }
+        public List<string> Amenities { get; set; } = new();
+        public List<string> PhotoPaths { get; set; } = new();
+        public string Notes { get; set; } = "";
+    }
+
+    public partial class AddPropertyWindow : Window
+    {
+        private int _currentStep = 1;
+        private readonly List<string> _uploadedPhotoPaths = new();
+
+        public PropertyFormResult Result { get; private set; } = new PropertyFormResult();
+
+        public AddPropertyWindow()
+        {
+            InitializeComponent();
+            UpdateStepUI();
+        }
+
+        private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+                DragMove();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+                Close();
+        }
+
+        private void Primary_Click(object sender, RoutedEventArgs e)
+        {
+            ErrorText.Visibility = Visibility.Collapsed;
+
+            if (_currentStep == 1)
+            {
+                if (string.IsNullOrWhiteSpace(txtName.Text))
+                {
+                    ShowError("Please enter a property or unit name.");
+                    return;
+                }
+                _currentStep = 2;
+                UpdateStepUI();
+            }
+            else if (_currentStep == 2)
+            {
+                if (string.IsNullOrWhiteSpace(txtRent.Text) || !decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out _))
+                {
+                    ShowError("Please enter a valid monthly rent amount.");
+                    return;
+                }
+                _currentStep = 3;
+                UpdateStepUI();
+            }
+            else if (_currentStep == 3)
+            {
+                PopulateResult(isDraft: false);
+                DialogResult = true;
+                Close();
+            }
+        }
+
+        private void Back_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentStep > 1)
+            {
+                _currentStep--;
+                ErrorText.Visibility = Visibility.Collapsed;
+                UpdateStepUI();
+            }
+        }
+
+        private void SaveDraft_Click(object sender, RoutedEventArgs e)
+        {
+            PopulateResult(isDraft: true);
+            DialogResult = true;
+            Close();
+        }
+
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            Close();
+        }
+
+        private void PopulateResult(bool isDraft)
+        {
+            decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out decimal rent);
+            decimal.TryParse(txtDeposit.Text.Replace(",", "").Trim(), out decimal deposit);
+
+            string status = "Available";
+            if (rbReserved.IsChecked == true) status = "Reserved";
+            else if (rbOccupied.IsChecked == true) status = "Occupied";
+
+            var amenities = new List<string>();
+            if (tbAircon.IsChecked == true) amenities.Add("Air Conditioning");
+            if (tbFurnished.IsChecked == true) amenities.Add("Fully Furnished");
+            if (tbBalcony.IsChecked == true) amenities.Add("Balcony");
+            if (tbPets.IsChecked == true) amenities.Add("Pet Friendly");
+            if (tbParking.IsChecked == true) amenities.Add("Parking Space");
+
+            Result = new PropertyFormResult
+            {
+                Name = txtName.Text.Trim(),
+                Floor = (cmbFloor.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
+                RoomType = (cmbRoomType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
+                MonthlyRent = rent,
+                SecurityDeposit = deposit,
+                Status = status,
+                IsDraft = isDraft,
+                WaterIncluded = chkWater.IsChecked == true,
+                ElectricityMetered = chkElectricity.IsChecked == true,
+                WifiIncluded = chkWifi.IsChecked == true,
+                Amenities = amenities,
+                PhotoPaths = new List<string>(_uploadedPhotoPaths),
+                Notes = txtNotes.Text.Trim()
+            };
+        }
+
+        private void ShowError(string message)
+        {
+            ErrorText.Text = message;
+            ErrorText.Visibility = Visibility.Visible;
+        }
+
+        private void UpdateStepUI()
+        {
+            Step1Panel.Visibility = _currentStep == 1 ? Visibility.Visible : Visibility.Collapsed;
+            Step2Panel.Visibility = _currentStep == 2 ? Visibility.Visible : Visibility.Collapsed;
+            Step3Panel.Visibility = _currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
+
+            btnBack.Visibility = _currentStep > 1 ? Visibility.Visible : Visibility.Collapsed;
+            btnPrimary.Content = _currentStep == 3 ? "Save Unit" : "Next →";
+
+            StepSubtitle.Text = _currentStep switch
+            {
+                1 => "Step 1 of 3 · Basic Info",
+                2 => "Step 2 of 3 · Financials",
+                3 => "Step 3 of 3 · Amenities & Photos",
+                _ => ""
+            };
+
+            SetIndicator(Dot1, Num1, Label1, Line1, active: _currentStep >= 1, current: _currentStep == 1);
+            SetIndicator(Dot2, Num2, Label2, Line2, active: _currentStep >= 2, current: _currentStep == 2);
+            SetIndicator(Dot3, Num3, Label3, null, active: _currentStep >= 3, current: _currentStep == 3);
+        }
+
+        private static void SetIndicator(Border dot, TextBlock num, TextBlock label, Border? line, bool active, bool current)
+        {
+            var darkGreen = (Brush)new BrushConverter().ConvertFrom("#1E3223")!;
+            var lightGreen = (Brush)new BrushConverter().ConvertFrom("#E3EAE5")!;
+            var textMuted = (Brush)new BrushConverter().ConvertFrom("#7C8F80")!;
+
+            if (current || active)
+            {
+                dot.Background = darkGreen;
+                num.Foreground = Brushes.White;
+                label.Foreground = darkGreen;
+            }
+            else
+            {
+                dot.Background = lightGreen;
+                num.Foreground = textMuted;
+                label.Foreground = textMuted;
+            }
+
+            if (line != null)
+            {
+                line.Background = active ? darkGreen : (Brush)new BrushConverter().ConvertFrom("#DDE5DF")!;
+            }
+        }
+
+        private void DropZone_Click(object sender, MouseButtonEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Multiselect = true,
+                Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                foreach (string filename in openFileDialog.FileNames)
+                {
+                    _uploadedPhotoPaths.Add(filename);
+                }
+                UpdatePhotoCount();
+            }
+        }
+
+        private void DropZone_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+
+            e.Handled = true;
+        }
+
+        private void DropZone_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
+            {
+                foreach (string file in files)
+                {
+                    string ext = Path.GetExtension(file).ToLower();
+                    if (ext == ".jpg" || ext == ".jpeg" || ext == ".png")
+                    {
+                        _uploadedPhotoPaths.Add(file);
+                    }
+                }
+                UpdatePhotoCount();
+            }
+        }
+
+        private void UpdatePhotoCount()
+        {
+            if (_uploadedPhotoPaths.Count > 0)
+            {
+                PhotoCountText.Text = $"✓ {_uploadedPhotoPaths.Count} photo(s) selected.";
+                PhotoCountText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PhotoCountText.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+}

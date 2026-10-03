@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:RentalManagementSystem.Presentation"
         Title="Uppa - Rental Management System"
         Width="1440"
-        Height="825"
+        Height="900"
         WindowStartupLocation="CenterScreen">
 
     <!-- ========== Entrance animation: heading, subtext, button rise in one after another ========== -->
@@ -232,7 +232,16 @@
           Visibility="Collapsed"
           Background="#99000000"
           MouseLeftButtonDown="AuthOverlay_MouseLeftButtonDown">
+        <!-- Step 1: "Are you a tenant or a landlord?" -->
+        <local:UserTypeCard x:Name="UserType"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            NextClicked="UserType_NextClicked"
+                            BackClicked="UserType_BackClicked"/>
+
+        <!-- Step 2: Login / Register -->
         <local:AuthCard x:Name="Auth"
+                        Visibility="Collapsed"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         LoginSucceeded="Auth_LoginSucceeded"

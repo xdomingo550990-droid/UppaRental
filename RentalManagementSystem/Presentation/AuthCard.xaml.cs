@@ -15,6 +15,9 @@ namespace RentalManagementSystem.Presentation
         /// <summary>Raised when the user logs in successfully.</summary>
         public event EventHandler LoginSucceeded;
 
+        /// <summary>Raised when the user clicks "Register" on the login side (so the page can ask tenant/landlord first).</summary>
+        public event EventHandler RegisterRequested;
+
         /// <summary>Raised when the user clicks the close (X) button.</summary>
         public event EventHandler CloseRequested;
 
@@ -43,7 +46,7 @@ namespace RentalManagementSystem.Presentation
 
         // ---------- Slide between Register and Login ----------
         private void ShowLogin_Click(object sender, RoutedEventArgs e) => Slide(toLogin: true);
-        private void ShowRegister_Click(object sender, RoutedEventArgs e) => Slide(toLogin: false);
+        private void ShowRegister_Click(object sender, RoutedEventArgs e) => RegisterRequested?.Invoke(this, EventArgs.Empty);
 
         private void Slide(bool toLogin)
         {

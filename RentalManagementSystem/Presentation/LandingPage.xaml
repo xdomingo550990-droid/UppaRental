@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Uppa - Rental Management System"
          Width="1440"
-        Height="900"
+        Height="825"
         WindowStartupLocation="CenterScreen">
 
     <Grid Margin="0,-9,0,-6">
@@ -44,8 +44,7 @@
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         HorizontalAlignment="Center"
-                        VerticalAlignment="Top"
-                        Margin="0,31,0,0">
+                        VerticalAlignment="Top" Margin="0,-1,0,0">
 
                 <Button Content="Home"
                         Margin="20,0"
@@ -86,7 +85,7 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
-                        Margin="0,35,0,0">
+                        Margin="0,2,0,0">
 
                 <Button Content="Login"
                         Margin="10,0"

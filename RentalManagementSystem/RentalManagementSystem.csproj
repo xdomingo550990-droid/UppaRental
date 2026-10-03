@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <Folder Include="DAO\" />
-    <Folder Include="Model\" />
     <Folder Include="Service\" />
   </ItemGroup>
 

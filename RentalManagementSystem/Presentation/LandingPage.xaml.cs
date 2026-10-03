@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Windows;
@@ -21,7 +21,40 @@ namespace RentalManagementSystem.Presentation
         {
             InitializeComponent();
         }
-        private void LoginButton_Click(object sender, RoutedEventArgs e)
+
+        // Nav "Login" -> open the popup on the Login side
+        private void LoginButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: true);
+
+        // Nav "Sign Up" -> open the popup on the Registration side
+        private void SignUpButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: false);
+
+        private void OpenAuth(bool login)
+        {
+            Auth.ShowMode(login);
+            AuthOverlay.Visibility = Visibility.Visible;
+        }
+
+        // "Explore the platform" -> open the About page
+        private void ExploreButton_Click(object sender, RoutedEventArgs e)
+        {
+            AboutPage about = new AboutPage();
+            about.Show();
+            this.Close();
+        }
+
+        private void CloseAuth() => AuthOverlay.Visibility = Visibility.Collapsed;
+
+        // Clicking the dark area outside the card closes the popup
+        private void AuthOverlay_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource == AuthOverlay)
+                CloseAuth();
+        }
+
+        private void Auth_CloseRequested(object sender, EventArgs e) => CloseAuth();
+
+        // Login succeeded -> your original behavior: open Dashboard, close this window
+        private void Auth_LoginSucceeded(object sender, EventArgs e)
         {
             // Instantiate the Dashboard page window
             DashboardPage dashboard = new DashboardPage();

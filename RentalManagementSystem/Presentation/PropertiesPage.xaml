@@ -94,13 +94,13 @@
 
             <!-- Title & Subtitle -->
             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                <TextBlock Text="Units: Room Inventory" FontSize="22" FontWeight="Bold" Foreground="#1E3223"/>
+                <TextBlock Text="Properties: Unit Inventory" FontSize="22" FontWeight="Bold" Foreground="#1E3223"/>
                 <TextBlock Text="Manage floor plans, active leases, and unit availability." FontSize="13" Foreground="#607464" Margin="0,4,0,0"/>
             </StackPanel>
 
             <!-- Top Right Action Buttons -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Content="+ Add Room" Style="{StaticResource HeaderPrimaryButtonStyle}" Margin="0,0,10,0"/>
+                <Button Content="+ Add Properties" Style="{StaticResource HeaderPrimaryButtonStyle}" Margin="0,0,10,0"/>
                 <Button Content="▤ Add Floor" Style="{StaticResource HeaderSecondaryButtonStyle}"/>
             </StackPanel>
         </Grid>
@@ -115,7 +115,7 @@
                 <!-- Compact Status Pills -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
                     <!-- All Rooms Pill -->
-                    <RadioButton Content="View All Rooms (6)" Style="{StaticResource FilterPillStyle}" IsChecked="True" Background="#1E3223" Foreground="White"/>
+                    <RadioButton Content="View All Properties (6)" Style="{StaticResource FilterPillStyle}" IsChecked="True" Background="#1E3223" Foreground="White"/>
                     
                     <!-- Available Pill -->
                     <RadioButton Content="Available (2)" Style="{StaticResource FilterPillStyle}" Background="#D0F0C0" Foreground="#004225"/>
@@ -135,7 +135,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="🔍 " FontSize="12" Foreground="#88988B" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBox Grid.Column="1" Background="Transparent" BorderThickness="0" FontSize="13" Foreground="#1E3223" VerticalAlignment="Center" Text="Search Room #, Floor or Type..."/>
+                        <TextBox Grid.Column="1" Background="Transparent" BorderThickness="0" FontSize="13" Foreground="#1E3223" VerticalAlignment="Center" Text="Search Property #, Room or Type..."/>
                     </Grid>
                 </Border>
             </StackPanel>
@@ -156,7 +156,7 @@
                       BorderThickness="0" 
                       RowHeight="44"
                       GridLinesVisibility="Horizontal" 
-                      HorizontalGridLinesBrush="#F0F4F1">
+                      HorizontalGridLinesBrush="#F0F4F1" SelectionChanged="dgUnits_SelectionChanged">
 
                 <DataGrid.ColumnHeaderStyle>
                     <Style TargetType="DataGridColumnHeader">
@@ -183,7 +183,7 @@
                 </DataGrid.RowStyle>
 
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="ROOM #" Binding="{Binding RoomNo}" Width="130"/>
+                    <DataGridTextColumn Header="PROPERTY #" Binding="{Binding RoomNo}" Width="130"/>
                     <DataGridTextColumn Header="FLOOR LEVEL" Binding="{Binding Floor}" Width="130"/>
                     <DataGridTextColumn Header="ROOM TYPE" Binding="{Binding RoomType}" Width="*"/>
                     <DataGridTextColumn Header="MONTHLY RENT" Binding="{Binding MonthlyRate}" Width="150"/>

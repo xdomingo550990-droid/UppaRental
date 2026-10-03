@@ -8,4 +8,9 @@ public partial class UnitsPage : UserControl
     {
         InitializeComponent();
     }
+
+    private void dgUnits_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+
+    }
 }

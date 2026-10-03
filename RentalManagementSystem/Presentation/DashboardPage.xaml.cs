@@ -11,10 +11,13 @@ namespace RentalManagementSystem.Presentation
         private const double SidebarCollapsedWidth = 72;
         private bool _sidebarCollapsed;
 
+        // The Overview content (cards) that lives inside MainContentFrame in the XAML
+        private readonly object _overviewView;
+
         public DashboardPage()
         {
             InitializeComponent();
-            MainContentFrame.Content = new OverviewPage();
+            _overviewView = MainContentFrame.Content;
         }
 
         private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
@@ -43,8 +46,8 @@ namespace RentalManagementSystem.Presentation
 
             MainContentFrame.Content = nav.Name switch
             {
-                nameof(btnOverview) => new OverviewPage(),
-                nameof(btnUnits) => new UnitsPage(),
+                nameof(btnOverview) => _overviewView,
+                nameof(btnProperties) => new UnitsPage(),
                 nameof(btnReservations) => new ReservationsPage(),
                 nameof(btnRenters) => new RentersPage(),
                 nameof(btnBilling) => new BillingPage(),
@@ -58,6 +61,11 @@ namespace RentalManagementSystem.Presentation
         private void LogOutButton_Click(object sender, RoutedEventArgs e)
         {
             // PUT YOUR ORIGINAL LOGOUT CODE HERE
+        }
+
+        private void btnUnits_Checked(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

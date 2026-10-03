@@ -4,11 +4,10 @@
         Title="About - Uppa Rental Management System"
         Width="1440"
         Height="900"
-        WindowStartupLocation="CenterScreen"
-        Background="#F3F8F4">
+        WindowStartupLocation="CenterScreen">
+
 
     <Window.Resources>
-        <!-- Same green gradient used on the landing page -->
         <LinearGradientBrush x:Key="GreenGradient" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#1B3A2A" Offset="0"/>
             <GradientStop Color="#27894C" Offset="1"/>
@@ -246,46 +245,24 @@
                                HorizontalAlignment="Center" Margin="0,6,0,28"/>
 
                     <UniformGrid Columns="3">
-
-                        <!-- Email -->
                         <StackPanel HorizontalAlignment="Center">
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#33FFFFFF"
-                HorizontalAlignment="Center" Margin="0,0,0,12">
-                                <TextBlock Text="&#xE715;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
                             <TextBlock Text="EMAIL" FontSize="12" FontWeight="SemiBold" Foreground="#CFE8D8"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="dsa@uppa.com" FontSize="17" Foreground="White" Margin="0,4,0,0"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
-
-                        <!-- Phone -->
                         <StackPanel HorizontalAlignment="Center">
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#33FFFFFF"
-                HorizontalAlignment="Center" Margin="0,0,0,12">
-                                <TextBlock Text="&#xE717;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
                             <TextBlock Text="PHONE" FontSize="12" FontWeight="SemiBold" Foreground="#CFE8D8"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="+63 9075896311" FontSize="17" Foreground="White" Margin="0,4,0,0"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
-
-                        <!-- Address -->
                         <StackPanel HorizontalAlignment="Center">
-                            <Border Width="48" Height="48" CornerRadius="24" Background="#33FFFFFF"
-                HorizontalAlignment="Center" Margin="0,0,0,12">
-                                <TextBlock Text="&#xE81D;" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
                             <TextBlock Text="ADDRESS" FontSize="12" FontWeight="SemiBold" Foreground="#CFE8D8"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="Matina, Davao City, Philippines" FontSize="17" Foreground="White" Margin="0,4,0,0"
-                   HorizontalAlignment="Center"/>
+                                       HorizontalAlignment="Center"/>
                         </StackPanel>
-
                     </UniformGrid>
                 </StackPanel>
             </Border>

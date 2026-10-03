@@ -168,7 +168,7 @@
                     <RadioButton x:Name="btnOverview" Style="{StaticResource NavItemStyle}"
                                  Tag="&#xE80F;" Content="Overview" IsChecked="True" Click="NavButton_Click"/>
                     <RadioButton x:Name="btnProperties" Style="{StaticResource NavItemStyle}"
-                                 Tag="&#xE71D;" Content="Properties" Click="NavButton_Click" Checked="btnUnits_Checked"/>
+                                 Tag="&#xE71D;" Content="Properties" Click="NavButton_Click"/>
 
                     <Border Style="{StaticResource NavDivider}"/>
 

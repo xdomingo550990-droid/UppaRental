@@ -62,10 +62,5 @@ namespace RentalManagementSystem.Presentation
         {
             // PUT YOUR ORIGINAL LOGOUT CODE HERE
         }
-
-        private void btnUnits_Checked(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

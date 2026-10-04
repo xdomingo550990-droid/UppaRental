@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -6,21 +8,16 @@ namespace RentalManagementSystem.Presentation
 {
     public partial class UnitsPage : UserControl
     {
-        public ObservableCollection<UnitViewModel> UnitsList { get; set; } = new ObservableCollection<UnitViewModel>();
+        private const int MaxPerSection = 4;   // cards/rows per section when "All" is selected
+        private string _filter = "All";
 
         public UnitsPage()
         {
             InitializeComponent();
-            LoadInitialUnits();
-            dgUnits.ItemsSource = UnitsList;
+            LoadSections();
         }
 
-        private void LoadInitialUnits()
-        {
-            UnitsList.Add(new UnitViewModel { RoomNo = "Unit 101", Floor = "1st Floor", RoomType = "Studio", MonthlyRate = "₱15,000", Status = "Available", Actions = "Edit / View" });
-            UnitsList.Add(new UnitViewModel { RoomNo = "Unit 102", Floor = "1st Floor", RoomType = "1-Bedroom", MonthlyRate = "₱18,000", Status = "Occupied", Actions = "Edit / View" });
-            UnitsList.Add(new UnitViewModel { RoomNo = "Unit 201", Floor = "2nd Floor", RoomType = "2-Bedroom", MonthlyRate = "₱25,000", Status = "Reserved", Actions = "Edit / View" });
-        }
+        // ---------- Add Property popup ----------
 
         private void AddProperty_Click(object sender, RoutedEventArgs e)
         {
@@ -31,28 +28,80 @@ namespace RentalManagementSystem.Presentation
 
             if (addWindow.ShowDialog() == true)
             {
-                PropertyFormResult result = addWindow.Result;
-
-                var newUnit = new UnitViewModel
-                {
-                    RoomNo = result.Name,
-                    Floor = string.IsNullOrEmpty(result.Floor) ? "N/A" : result.Floor,
-                    RoomType = string.IsNullOrEmpty(result.RoomType) ? "N/A" : result.RoomType,
-                    MonthlyRate = $"₱{result.MonthlyRent:N0}",
-                    Status = result.IsDraft ? "Draft" : result.Status,
-                    Actions = "Edit / View"
-                };
-
-                UnitsList.Insert(0, newUnit);
+                // Goes into the shared list, so it also appears on the Overview page.
+                PropertyStore.Add(PropertyStore.FromForm(addWindow.Result));
+                LoadSections();
             }
         }
 
-        private void dgUnits_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        // ---------- View switch, chips, search ----------
+
+        private void View_Checked(object sender, RoutedEventArgs e)
         {
-            // Optional: Selection behavior handling
+            // Fires during InitializeComponent, before the views exist.
+            if (scrList == null || scrGallery == null || rbGallery == null) return;
+
+            bool gallery = rbGallery.IsChecked == true;
+            scrList.Visibility = gallery ? Visibility.Collapsed : Visibility.Visible;
+            scrGallery.Visibility = gallery ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void Category_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is RadioButton rb) _filter = rb.Tag?.ToString() ?? "All";
+
+            if (icListSections == null) return;
+            LoadSections();
+        }
+
+        private void Search_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (icListSections == null) return;
+            LoadSections();
+        }
+
+        // ---------- Sections ----------
+
+        private void LoadSections()
+        {
+            string query = txtSearch?.Text?.Trim() ?? "";
+
+            IEnumerable<RentalProperty> pool = PropertyStore.All;
+            if (query.Length > 0)
+            {
+                pool = pool.Where(p =>
+                    Has(p.Name, query) || Has(p.Location, query) || Has(p.Description, query) ||
+                    Has(p.Status, query) || Has(p.RoomType, query));
+            }
+
+            // While searching, show every match instead of just the top few per category.
+            int perSection = query.Length > 0 ? int.MaxValue : MaxPerSection;
+
+            var sections = PropertyStore.BuildSections(pool, _filter, perSection, includeDrafts: true);
+
+            icListSections.ItemsSource = sections;
+            icGallerySections.ItemsSource = sections;
+            txtEmpty.Visibility = sections.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static bool Has(string text, string query) =>
+            !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+        // ---------- Gallery "Read more" (placeholder: replace with a details popup) ----------
+
+        private void ReadMore_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is Button b && b.DataContext is RentalProperty p)
+            {
+                MessageBox.Show(
+                    $"{p.Name}\n{p.Location}\n\n{p.Description}\n\n{p.Summary}\n{p.Status} · {p.PriceWithUnit}",
+                    "Property details");
+            }
         }
     }
 
+    // Kept only in case another page still references it. If the build has no errors
+    // after you delete this class, you can remove it.
     public class UnitViewModel
     {
         public string RoomNo { get; set; } = "";

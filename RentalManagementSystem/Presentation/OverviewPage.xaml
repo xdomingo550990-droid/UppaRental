@@ -1,143 +1,270 @@
 ﻿<UserControl x:Class="RentalManagementSystem.Presentation.OverviewPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="1000">
 
     <Grid>
+        <Grid.Resources>
+
+            <!-- Placeholder photo for all cards (swap per card later) -->
+            <ImageBrush x:Key="HouseBrush" ImageSource="/Resources/Images/houseImage1.jpg" Stretch="UniformToFill"/>
+
+            <!-- Category chip -->
+            <Style x:Key="ChipStyle" TargetType="RadioButton">
+                <Setter Property="GroupName" Value="Category"/>
+                <Setter Property="Foreground" Value="#1E3223"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Margin" Value="0,0,10,0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="chip" Padding="20,9" CornerRadius="18" Background="White">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.12"/>
+                                </Border.Effect>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="chip" Property="Background" Value="#F1F5F2"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="chip" Property="Background" Value="#1E3223"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Property card -->
+            <Style x:Key="PropCard" TargetType="Border">
+                <Setter Property="Width" Value="270"/>
+                <Setter Property="Margin" Value="0,0,20,24"/>
+                <Setter Property="Padding" Value="14"/>
+                <Setter Property="CornerRadius" Value="28"/>
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#9FB1BC" Offset="0"/>
+                            <GradientStop Color="#7F9A78" Offset="0.55"/>
+                            <GradientStop Color="#6E8F4F" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect BlurRadius="24" ShadowDepth="6" Opacity="0.22"/>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CardTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0,2,0,0"/>
+            </Style>
+            <Style x:Key="CardOwner" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="Foreground" Value="#EAF0EB"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="CardLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="Foreground" Value="#D9E2DA"/>
+            </Style>
+            <Style x:Key="CardValue" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="#F5C542"/>
+                <Setter Property="Margin" Value="0,2,0,0"/>
+            </Style>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 1. Four Horizontal Summary Cards -->
-        <UniformGrid Grid.Row="0" Columns="4" Height="100" Margin="0,0,0,24">
+        <!-- Heading -->
+        <TextBlock Grid.Row="0" HorizontalAlignment="Center" Margin="0,8,0,20"
+                   FontSize="30" FontWeight="Bold" Foreground="#1E3223">
+            <Run Text="Ready to Find Your "/>
+            <Run Text="Dream" FontFamily="Georgia" FontStyle="Italic" Foreground="#C9972B"/>
+            <Run Text=" Property?"/>
+        </TextBlock>
 
-            <!-- Card 1: Revenue -->
-            <Border Margin="0,0,12,0" CornerRadius="12">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                        <GradientStop Color="#7BA05B" Offset="0"/>
-                        <GradientStop Color="#D0F0C0" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" Color="#000000" Direction="270" Opacity="0.15" ShadowDepth="4"/>
-                </Border.Effect>
-                <StackPanel Margin="18,14">
-                    <TextBlock Text="Revenue" FontSize="13" FontWeight="Bold" Foreground="#004225"/>
-                    <TextBlock Text="₱120,000" FontSize="22" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
-                </StackPanel>
-            </Border>
+        <!-- Category chips -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,28">
+            <RadioButton Style="{StaticResource ChipStyle}" Content="All" IsChecked="True"/>
+            <RadioButton Style="{StaticResource ChipStyle}" Content="Cottage"/>
+            <RadioButton Style="{StaticResource ChipStyle}" Content="Chalet"/>
+            <RadioButton Style="{StaticResource ChipStyle}" Content="Penthouse"/>
+            <RadioButton Style="{StaticResource ChipStyle}" Content="Farmhouse"/>
+        </StackPanel>
 
-            <!-- Card 2: Total Units -->
-            <Border Margin="6,0,6,0" CornerRadius="12">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                        <GradientStop Color="#7BA05B" Offset="0"/>
-                        <GradientStop Color="#D0F0C0" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" Color="#000000" Direction="270" Opacity="0.15" ShadowDepth="4"/>
-                </Border.Effect>
-                <StackPanel Margin="18,14">
-                    <TextBlock Text="Total Units" FontSize="13" FontWeight="Bold" Foreground="#004225"/>
-                    <TextBlock Text="10" FontSize="22" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
-                </StackPanel>
-            </Border>
+        <!-- Property cards (scroll sideways) -->
+        <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="4,0,0,0">
 
-            <!-- Card 3: Available -->
-            <Border Margin="6,0,6,0" CornerRadius="12">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                        <GradientStop Color="#7BA05B" Offset="0"/>
-                        <GradientStop Color="#D0F0C0" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" Color="#000000" Direction="270" Opacity="0.15" ShadowDepth="4"/>
-                </Border.Effect>
-                <StackPanel Margin="18,14">
-                    <TextBlock Text="Available" FontSize="13" FontWeight="Bold" Foreground="#004225"/>
-                    <TextBlock Text="3" FontSize="22" FontWeight="Bold" Foreground="#1E3223" Margin="0,6,0,0"/>
-                </StackPanel>
-            </Border>
+                <!-- Card 1 -->
+                <Border Style="{StaticResource PropCard}">
+                    <StackPanel>
+                        <Border Height="200" CornerRadius="22" Background="{StaticResource HouseBrush}">
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                                    Width="32" Height="32" CornerRadius="16" Background="#80333F3A">
+                                <TextBlock Text="♡" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                            <TextBlock Text="Uppa Rental" Style="{StaticResource CardOwner}"/>
+                            <Border Width="14" Height="14" CornerRadius="7" Background="#F5C542" Margin="6,0,0,0">
+                                <TextBlock Text="✓" FontSize="9" FontWeight="Bold" Foreground="#1E3223"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Unit 101" Style="{StaticResource CardTitle}"/>
+                        <Border Background="#66000000" CornerRadius="14" Padding="14,10" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Monthly rent" Style="{StaticResource CardLabel}"/>
+                                    <TextBlock Text="₱12,500" Style="{StaticResource CardValue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="Status" Style="{StaticResource CardLabel}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="Occupied" Style="{StaticResource CardValue}" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
 
-            <!-- Card 4: Occupied -->
-            <Border Margin="12,0,0,0" CornerRadius="12">
-                <Border.Background>
-                    <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
-                        <GradientStop Color="#FF3800" Offset="0"/>
-                        <GradientStop Color="#FDBCB4" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.Background>
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="10" Color="#000000" Direction="270" Opacity="0.15" ShadowDepth="4"/>
-                </Border.Effect>
-                <StackPanel Margin="18,14">
-                    <TextBlock Text="Occupied" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF"/>
-                    <TextBlock Text="7" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" Margin="0,6,0,0"/>
-                </StackPanel>
-            </Border>
+                <!-- Card 2 -->
+                <Border Style="{StaticResource PropCard}">
+                    <StackPanel>
+                        <Border Height="200" CornerRadius="22" Background="{StaticResource HouseBrush}">
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                                    Width="32" Height="32" CornerRadius="16" Background="#80333F3A">
+                                <TextBlock Text="♡" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                            <TextBlock Text="Uppa Rental" Style="{StaticResource CardOwner}"/>
+                            <Border Width="14" Height="14" CornerRadius="7" Background="#F5C542" Margin="6,0,0,0">
+                                <TextBlock Text="✓" FontSize="9" FontWeight="Bold" Foreground="#1E3223"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Unit 102" Style="{StaticResource CardTitle}"/>
+                        <Border Background="#66000000" CornerRadius="14" Padding="14,10" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Monthly rent" Style="{StaticResource CardLabel}"/>
+                                    <TextBlock Text="₱9,800" Style="{StaticResource CardValue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="Status" Style="{StaticResource CardLabel}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="Vacant" Style="{StaticResource CardValue}" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
 
-        </UniformGrid>
+                <!-- Card 3 -->
+                <Border Style="{StaticResource PropCard}">
+                    <StackPanel>
+                        <Border Height="200" CornerRadius="22" Background="{StaticResource HouseBrush}">
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                                    Width="32" Height="32" CornerRadius="16" Background="#80333F3A">
+                                <TextBlock Text="♡" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                            <TextBlock Text="Uppa Rental" Style="{StaticResource CardOwner}"/>
+                            <Border Width="14" Height="14" CornerRadius="7" Background="#F5C542" Margin="6,0,0,0">
+                                <TextBlock Text="✓" FontSize="9" FontWeight="Bold" Foreground="#1E3223"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Unit 201" Style="{StaticResource CardTitle}"/>
+                        <Border Background="#66000000" CornerRadius="14" Padding="14,10" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Monthly rent" Style="{StaticResource CardLabel}"/>
+                                    <TextBlock Text="₱15,000" Style="{StaticResource CardValue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="Status" Style="{StaticResource CardLabel}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="Occupied" Style="{StaticResource CardValue}" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
 
-        <!-- 2. Room Status Section Title -->
-        <TextBlock Grid.Row="1" Text="ROOM STATUS" FontSize="15" FontWeight="Bold" Foreground="#1E3223" Margin="2,0,0,12"/>
+                <!-- Card 4 -->
+                <Border Style="{StaticResource PropCard}">
+                    <StackPanel>
+                        <Border Height="200" CornerRadius="22" Background="{StaticResource HouseBrush}">
+                            <Border HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,10,10,0"
+                                    Width="32" Height="32" CornerRadius="16" Background="#80333F3A">
+                                <TextBlock Text="♡" FontFamily="Segoe UI Symbol" FontSize="16" Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
+                            <TextBlock Text="Uppa Rental" Style="{StaticResource CardOwner}"/>
+                            <Border Width="14" Height="14" CornerRadius="7" Background="#F5C542" Margin="6,0,0,0">
+                                <TextBlock Text="✓" FontSize="9" FontWeight="Bold" Foreground="#1E3223"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="Unit 202" Style="{StaticResource CardTitle}"/>
+                        <Border Background="#66000000" CornerRadius="14" Padding="14,10" Margin="0,12,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Monthly rent" Style="{StaticResource CardLabel}"/>
+                                    <TextBlock Text="₱8,500" Style="{StaticResource CardValue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="Status" Style="{StaticResource CardLabel}" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="Reserved" Style="{StaticResource CardValue}" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
 
-        <!-- 3. Room Status Data Grid Table -->
-        <Border Grid.Row="2" Background="White" CornerRadius="12" Padding="12">
-            <Border.Effect>
-                <DropShadowEffect Color="#1E3223" 
-                                  Direction="270" 
-                                  ShadowDepth="5" 
-                                  BlurRadius="20" 
-                                  Opacity="0.30"/>
-            </Border.Effect>
-            <DataGrid x:Name="dgRoomStatus" 
-                      AutoGenerateColumns="False" 
-                      CanUserAddRows="False" 
-                      IsReadOnly="True" 
-                      HeadersVisibility="Column"
-                      Background="Transparent" 
-                      BorderThickness="0" 
-                      RowHeight="40"
-                      GridLinesVisibility="Horizontal" 
-                      HorizontalGridLinesBrush="#EFEFEF">
-
-                <DataGrid.ColumnHeaderStyle>
-                    <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="#E8EFE9"/>
-                        <Setter Property="Foreground" Value="#1E3223"/>
-                        <Setter Property="FontWeight" Value="Bold"/>
-                        <Setter Property="Height" Value="38"/>
-                        <Setter Property="Padding" Value="12,0"/>
-                        <Setter Property="BorderThickness" Value="0"/>
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
-
-                <DataGrid.RowStyle>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="Padding" Value="6,0"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F5F8F5"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.RowStyle>
-
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Room No." Binding="{Binding RoomNo}" Width="*"/>
-                    <DataGridTextColumn Header="Room Type" Binding="{Binding RoomType}" Width="*"/>
-                    <DataGridTextColumn Header="Monthly Rate" Binding="{Binding MonthlyRate}" Width="*"/>
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

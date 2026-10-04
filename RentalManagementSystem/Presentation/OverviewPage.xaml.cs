@@ -1,11 +1,12 @@
 ﻿using System.Windows.Controls;
 
-namespace RentalManagementSystem.Presentation;
-
-public partial class OverviewPage : UserControl
+namespace RentalManagementSystem.Presentation
 {
-    public OverviewPage()
+    public partial class OverviewPage : UserControl
     {
-        InitializeComponent();
+        public OverviewPage()
+        {
+            InitializeComponent();
+        }
     }
 }

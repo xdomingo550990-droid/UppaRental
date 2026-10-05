@@ -245,6 +245,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         LoginSucceeded="Auth_LoginSucceeded"
+                        RegisterRequested="Auth_RegisterRequested"
                         CloseRequested="Auth_CloseRequested"/>
     </Grid>
 

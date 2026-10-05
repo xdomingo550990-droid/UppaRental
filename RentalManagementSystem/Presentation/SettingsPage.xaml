@@ -27,10 +27,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Settings" Style="{StaticResource PageTitle}"/>
-                    <TextBlock Text="Manage your profile, rental preferences, and notifications." Style="{StaticResource PageSubtitle}"/>
-                </StackPanel>
+                <StackPanel VerticalAlignment="Center"/>
                 <Button Grid.Column="1" Content="Save Changes" Style="{StaticResource PrimaryButton}"
                         VerticalAlignment="Center" Click="Save_Click"/>
             </Grid>

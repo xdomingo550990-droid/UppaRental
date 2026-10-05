@@ -59,7 +59,22 @@ namespace RentalManagementSystem.Presentation
 
         private void LogOutButton_Click(object sender, RoutedEventArgs e)
         {
-            // PUT YOUR ORIGINAL LOGOUT CODE HERE
+            var result = MessageBox.Show(
+                "Are you sure you want to logout?",
+                "Confirm Logout",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.No);          // "No" is the default so Enter doesn't log you out by accident
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            // If you keep any session or current-user state, clear it here
+            // e.g. SessionManager.CurrentUser = null;
+
+            var landing = new LandingPage();
+            landing.Show();                    // open the landing page first...
+            this.Close();                      // ...then close the dashboard
         }
     }
 }

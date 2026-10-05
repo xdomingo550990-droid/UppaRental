@@ -26,7 +26,6 @@ namespace RentalManagementSystem.Presentation
 
     public partial class RentersPage : UserControl
     {
-        // SAMPLE DATA: replace with renters loaded from your database / DAO.
         private readonly ObservableCollection<RenterRow> _renters = new ObservableCollection<RenterRow>
         {
             new RenterRow { Name = "Juan Dela Cruz",   Unit = "Unit 101", Contact = "0917 123 4567", LeaseStart = "Jan 15, 2026", LeaseEnd = "Jan 14, 2027", MonthlyRent = 12500, Status = "Active" },
@@ -39,6 +38,7 @@ namespace RentalManagementSystem.Presentation
 
         private ICollectionView _view = null!;
         private string _statusFilter = "All";
+        private string _globalSearchQuery = "";
 
         public RentersPage()
         {
@@ -51,6 +51,14 @@ namespace RentalManagementSystem.Presentation
             UpdateSummary();
         }
 
+        // ---------- Global Search Hook ----------
+
+        public void ApplyGlobalSearch(string query)
+        {
+            _globalSearchQuery = query?.Trim() ?? "";
+            _view?.Refresh();
+        }
+
         // ---------- Filtering ----------
 
         private bool Matches(object item)
@@ -59,12 +67,11 @@ namespace RentalManagementSystem.Presentation
 
             if (_statusFilter != "All" && r.Status != _statusFilter) return false;
 
-            var q = txtSearch?.Text?.Trim() ?? "";
-            if (q.Length == 0) return true;
+            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
 
-            return r.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
-                || r.Unit.Contains(q, StringComparison.OrdinalIgnoreCase)
-                || r.Contact.Contains(q, StringComparison.OrdinalIgnoreCase);
+            return r.Name.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || r.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || r.Contact.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
@@ -72,8 +79,6 @@ namespace RentalManagementSystem.Presentation
             if (sender is RadioButton rb) _statusFilter = rb.Tag?.ToString() ?? "All";
             _view?.Refresh();
         }
-
-        private void Search_TextChanged(object sender, TextChangedEventArgs e) => _view?.Refresh();
 
         // ---------- Summary ----------
 
@@ -94,7 +99,7 @@ namespace RentalManagementSystem.Presentation
             rbPast.Content = $"Past ({past})";
         }
 
-        // ---------- Buttons (placeholders: hook these up next) ----------
+        // ---------- Buttons ----------
 
         private void AddRenter_Click(object sender, RoutedEventArgs e)
         {

@@ -16,14 +16,9 @@
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <!-- Header -->
-            <RowDefinition Height="Auto"/>
-            <!-- Summary cards -->
-            <RowDefinition Height="Auto"/>
-            <!-- Filters + search -->
-            <RowDefinition Height="*"/>
-            <!-- Table -->
+            <RowDefinition Height="Auto"/> <!-- 1. Header -->
+            <RowDefinition Height="Auto"/> <!-- 2. Summary cards -->
+            <RowDefinition Height="*"/>    <!-- 3. Table card (Filters + DataGrid) -->
         </Grid.RowDefinitions>
 
         <!-- 1. Header -->
@@ -34,7 +29,6 @@
             </Grid.ColumnDefinitions>
             
             <StackPanel VerticalAlignment="Center">
-                <!-- Page Subtitle -->
                 <TextBlock Text="Manage tenant profiles, lease periods, and rent status." 
                            Style="{StaticResource PageSubtitle}"
                            FontWeight="SemiBold"
@@ -80,10 +74,16 @@
             </Border>
         </Grid>
 
-        <!-- 3. Filter pills + search -->
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,20">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+        <!-- 3. Main Renters Card (Filters + DataGrid) -->
+        <Border Grid.Row="2" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Filter Pills -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
                     <RadioButton x:Name="rbAll" Content="All" Tag="All" IsChecked="True"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="rbActive" Content="Active" Tag="Active"
@@ -94,76 +94,48 @@
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                 </StackPanel>
 
-                <Border Style="{StaticResource InputBorder}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#607464"
-                                   VerticalAlignment="Center" Margin="14,0,0,0"/>
-                        <TextBox x:Name="txtSearch" Grid.Column="1" Style="{StaticResource PlainTextBox}"
-                                 TextChanged="Search_TextChanged"/>
-                        <TextBlock Grid.Column="1" Text="Search renter, unit, or contact..." IsHitTestVisible="False"
-                                   Foreground="#8C9E90" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=txtSearch}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </Border>
-            </StackPanel>
-        </Border>
-
-        <!-- 4. Renters table -->
-        <Border Grid.Row="3" Style="{StaticResource Card}">
-            <DataGrid x:Name="dgRenters" Style="{StaticResource AppDataGrid}">
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="RENTER" Width="230">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Border Width="32" Height="32" CornerRadius="16" Background="#1E3223">
-                                        <TextBlock Text="{Binding Initial}" Foreground="White" FontWeight="Bold" FontSize="13"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <!-- Renters Table -->
+                <DataGrid Grid.Row="1" x:Name="dgRenters" Style="{StaticResource AppDataGrid}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="RENTER" Width="230">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="32" Height="32" CornerRadius="16" Background="#1E3223">
+                                            <TextBlock Text="{Binding Initial}" Foreground="White" FontWeight="Bold" FontSize="13"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="100"/>
+                        <DataGridTextColumn Header="CONTACT" Binding="{Binding Contact}" Width="150"/>
+                        <DataGridTextColumn Header="LEASE PERIOD" Binding="{Binding LeasePeriod}" Width="*"/>
+                        <DataGridTextColumn Header="MONTHLY RENT" Binding="{Binding RentText}" Width="130"/>
+                        <DataGridTemplateColumn Header="STATUS" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource StatusBadge}">
+                                        <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="Bold"/>
                                     </Border>
-                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="100"/>
-                    <DataGridTextColumn Header="CONTACT" Binding="{Binding Contact}" Width="150"/>
-                    <DataGridTextColumn Header="LEASE PERIOD" Binding="{Binding LeasePeriod}" Width="*"/>
-                    <DataGridTextColumn Header="MONTHLY RENT" Binding="{Binding RentText}" Width="130"/>
-                    <DataGridTemplateColumn Header="STATUS" Width="120">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource StatusBadge}">
-                                    <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="Bold"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="ACTIONS" Width="110">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
-                                    <Button Content="Edit" Style="{StaticResource LinkButton}" Click="Edit_Click"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="ACTIONS" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
+                                        <Button Content="Edit" Style="{StaticResource LinkButton}" Click="Edit_Click"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

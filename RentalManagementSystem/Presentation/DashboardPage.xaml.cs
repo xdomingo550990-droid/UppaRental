@@ -59,22 +59,22 @@ namespace RentalManagementSystem.Presentation
 
         private void LogOutButton_Click(object sender, RoutedEventArgs e)
         {
-            // 1. Ask for confirmation
-            MessageBoxResult result = MessageBox.Show(
-                "Are you sure you want to log out?", 
-                "Confirm Logout", 
-                MessageBoxButton.YesNo, 
-                MessageBoxImage.Question);
+            var result = MessageBox.Show(
+                "Are you sure you want to logout?",
+                "Confirm Logout",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question,
+                MessageBoxResult.No);          // "No" is the default so Enter doesn't log you out by accident
 
-            if (result == MessageBoxResult.Yes)
-            {
-                // 2. Open LandingPage (or AuthCard/LandingPage depending on your login setup)
-                LandingPage landingPage = new LandingPage();
-                landingPage.Show();
+            if (result != MessageBoxResult.Yes)
+                return;
 
-                // 3. Close current window
-                Window.GetWindow(this)?.Close();
-            }
+            // If you keep any session or current-user state, clear it here
+            // e.g. SessionManager.CurrentUser = null;
+
+            var landing = new LandingPage();
+            landing.Show();                    // open the landing page first...
+            this.Close();                      // ...then close the dashboard
         }
     }
 }

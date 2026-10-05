@@ -226,7 +226,7 @@
                                Foreground="#1E3223" VerticalAlignment="Center"/>
 
                     <!-- Search Bar (next to the title) -->
-                    <Border x:Name="SearchBar" Grid.Column="1" HorizontalAlignment="Left" Width="700" Height="38"
+                    <Border x:Name="SearchBar" Grid.Column="1" HorizontalAlignment="Left" Width="450" Height="38"
                             Margin="257,0,0,0" Background="#E8EFE9" CornerRadius="19" Padding="14,0">
                         <Grid VerticalAlignment="Center">
                             <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"

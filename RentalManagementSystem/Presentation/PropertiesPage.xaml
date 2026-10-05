@@ -3,7 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:RentalManagementSystem.Presentation"
              mc:Ignorable="d"
+             local:Manage.ActionsVisibility="Visible"
              d:DesignHeight="700" d:DesignWidth="1000">
 
     <UserControl.Resources>
@@ -43,36 +45,15 @@
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <!-- Header -->
-            <RowDefinition Height="Auto"/>
             <!-- View switch + search -->
             <RowDefinition Height="Auto"/>
-            <!-- Category chips -->
+            <!-- Category chips + Add Property -->
             <RowDefinition Height="*"/>
             <!-- Content -->
         </Grid.RowDefinitions>
 
-        <!-- 1. Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <StackPanel VerticalAlignment="Center">
-                <!-- Page Subtitle -->
-                <TextBlock Text="Manage floor plans, active leases, and unit availability." 
-                           Style="{StaticResource PageSubtitle}" 
-                           FontWeight="SemiBold" 
-                           Foreground="#1E3223"/>
-            </StackPanel>
-            
-            <Button Grid.Column="1" Content="+ Add Property" Style="{StaticResource PrimaryButton}"
-                    VerticalAlignment="Center" Click="AddProperty_Click"/>
-        </Grid>
-
-        <!-- 2. View switch + search -->
-        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,16" Padding="12">
+        <!-- 1. View switch + search -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16" Padding="12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -117,31 +98,38 @@
             </Grid>
         </Border>
 
-        <!-- 3. Category chips (same categories as the Overview, plus Drafts) -->
-        <WrapPanel Grid.Row="2" Margin="0,0,0,6">
-            <RadioButton Style="{StaticResource ChipStyle}" Content="All" Tag="All" IsChecked="True" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Most Popular" Tag="Popular" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Most Affordable" Tag="Affordable" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Available" Tag="Available" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Reserved" Tag="Reserved" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Occupied" Tag="Occupied" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Long Term" Tag="Long" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Short Term" Tag="Short" Checked="Category_Checked"/>
-            <RadioButton Style="{StaticResource ChipStyle}" Content="Drafts" Tag="Drafts" Checked="Category_Checked"/>
-        </WrapPanel>
+        <!-- 2. Category chips (left) + Add Property button (right), same level -->
+        <Grid Grid.Row="1" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <!-- 4. Content: list view (text) or gallery view (photos) -->
-        <Grid Grid.Row="3">
+            <WrapPanel Grid.Column="0">
+                <RadioButton Style="{StaticResource ChipStyle}" Content="All" Tag="All" IsChecked="True" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Available" Tag="Available" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Reserved" Tag="Reserved" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Occupied" Tag="Occupied" Checked="Category_Checked"/>
+            </WrapPanel>
+
+            <Button Grid.Column="1" Content="+ Add Property" Style="{StaticResource PrimaryButton}"
+                    VerticalAlignment="Top" Margin="16,0,0,10" Click="AddProperty_Click"/>
+        </Grid>
+
+        <!-- 3. Content: list view (text) or gallery view (photos).
+                Button.Click catches Read more / Edit / Delete from inside the templates. -->
+        <Grid Grid.Row="2">
             <ScrollViewer x:Name="scrList" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl x:Name="icListSections" Margin="0,0,8,16"
-                              ItemTemplate="{StaticResource ListSectionTemplate}"/>
+                              ItemTemplate="{StaticResource ListSectionTemplate}"
+                              Button.Click="Item_Click"/>
             </ScrollViewer>
 
             <ScrollViewer x:Name="scrGallery" Visibility="Collapsed"
                           VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl x:Name="icGallerySections" Margin="0,0,8,16"
                               ItemTemplate="{StaticResource GallerySectionTemplate}"
-                              Button.Click="ReadMore_Click"/>
+                              Button.Click="Item_Click"/>
             </ScrollViewer>
 
             <TextBlock x:Name="txtEmpty" Text="No properties match this category or search."

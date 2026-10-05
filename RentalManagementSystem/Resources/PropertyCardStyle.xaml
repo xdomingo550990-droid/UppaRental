@@ -1,5 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:RentalManagementSystem.Presentation">
     <!-- Category chip -->
     <Style x:Key="ChipStyle" TargetType="RadioButton">
         <Setter Property="GroupName" Value="Category"/>
@@ -145,6 +146,38 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Edit / Delete links (only visible on pages that set Manage.ActionsVisibility) -->
+    <Style x:Key="ManageButton" TargetType="Button">
+        <Setter Property="Foreground" Value="#27894C"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0,0,14,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="Transparent" Padding="0,2">
+                        <ContentPresenter/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#1E3223"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style x:Key="DeleteButton" TargetType="Button" BasedOn="{StaticResource ManageButton}">
+        <Setter Property="Foreground" Value="#A81C0C"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="#6E1208"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- 4 cards per row -->
     <ItemsPanelTemplate x:Key="FourColumnPanel">
         <UniformGrid Columns="4"/>
@@ -229,10 +262,17 @@
                             <TextBlock Text="{Binding PriceUnit}" FontSize="11" Foreground="#8A9A8D"
                                        VerticalAlignment="Bottom" Margin="4,0,0,2"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="Read more  ›" Style="{StaticResource ReadMoreButton}"
+                        <Button Grid.Column="1" Content="Read more  ›" Tag="Read" Style="{StaticResource ReadMoreButton}"
                                 VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
+
+                <!-- Edit / Delete (hidden unless the page turns them on) -->
+                <StackPanel Orientation="Horizontal" Margin="2,8,0,0"
+                            Visibility="{Binding Path=(local:Manage.ActionsVisibility), RelativeSource={RelativeSource Self}}">
+                    <Button Content="Edit" Tag="Edit" Style="{StaticResource ManageButton}"/>
+                    <Button Content="Delete" Tag="Delete" Style="{StaticResource DeleteButton}"/>
+                </StackPanel>
             </StackPanel>
         </Border>
     </DataTemplate>
@@ -259,6 +299,13 @@
                                HorizontalAlignment="Right"/>
                     <TextBlock Text="{Binding Status}" Style="{StaticResource PropStatusText}"
                                HorizontalAlignment="Right" Margin="0,4,0,0"/>
+
+                    <!-- Edit / Delete (hidden unless the page turns them on) -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0"
+                                Visibility="{Binding Path=(local:Manage.ActionsVisibility), RelativeSource={RelativeSource Self}}">
+                        <Button Content="Edit" Tag="Edit" Style="{StaticResource ManageButton}"/>
+                        <Button Content="Delete" Tag="Delete" Style="{StaticResource DeleteButton}" Margin="0"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>

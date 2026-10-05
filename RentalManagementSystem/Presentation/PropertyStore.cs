@@ -10,6 +10,22 @@ using System.Windows.Media.Imaging;
 
 namespace RentalManagementSystem.Presentation
 {
+    /// <summary>
+    /// Inherited attached property. A page sets Manage.ActionsVisibility="Visible" on its root
+    /// to show the Edit / Delete links inside the property cards and rows.
+    /// Pages that don't set it (like Overview) never show them.
+    /// </summary>
+    public static class Manage
+    {
+        public static readonly DependencyProperty ActionsVisibilityProperty =
+            DependencyProperty.RegisterAttached(
+                "ActionsVisibility", typeof(Visibility), typeof(Manage),
+                new FrameworkPropertyMetadata(Visibility.Collapsed, FrameworkPropertyMetadataOptions.Inherits));
+
+        public static Visibility GetActionsVisibility(DependencyObject o) => (Visibility)o.GetValue(ActionsVisibilityProperty);
+        public static void SetActionsVisibility(DependencyObject o, Visibility v) => o.SetValue(ActionsVisibilityProperty, v);
+    }
+
     /// <summary>One property/unit. Used by both the Overview and Properties pages.</summary>
     public class RentalProperty
     {
@@ -128,6 +144,20 @@ namespace RentalManagementSystem.Presentation
 
         public static void Add(RentalProperty property) => All.Insert(0, property);
 
+        /// <summary>Deletes a property from the shared list. Returns false if it wasn't found.</summary>
+        public static bool Remove(RentalProperty property) => All.Remove(property);
+
+        /// <summary>
+        /// Call after a property's fields were changed in place. Re-sets the item so
+        /// CollectionChanged fires for anything listening to <see cref="All"/>.
+        /// (If you add a database later, save the changes here.)
+        /// </summary>
+        public static void NotifyUpdated(RentalProperty property)
+        {
+            int index = All.IndexOf(property);
+            if (index >= 0) All[index] = property;
+        }
+
         // ---------- From the Add Property popup ----------
 
         public static RentalProperty FromForm(PropertyFormResult r)
@@ -164,7 +194,7 @@ namespace RentalManagementSystem.Presentation
             return char.IsDigit(roomType[0]) ? roomType[0] - '0' : 0;   // "2-Bedroom" -> 2, "Studio" -> 0
         }
 
-        // ---------- Categories (the same ones used by both pages) ----------
+        // ---------- Categories for the Overview page ----------
 
         /// <param name="filter">"All", or one of: Popular, Affordable, Available, Reserved, Occupied, Long, Short, Drafts</param>
         /// <param name="maxPerSection">Cards/rows per section when "All" is selected</param>
@@ -212,6 +242,43 @@ namespace RentalManagementSystem.Presentation
                     Subtitle = d.Subtitle,
                     Items = items,
                     ShowDivider = result.Count > 0    // divider before every section except the first
+                });
+            }
+            return result;
+        }
+
+        // ---------- Status-only grouping for the Properties page ----------
+
+        /// <summary>Groups properties as Available, Reserved, Occupied. filter: "All" or one of those keys.</summary>
+        public static List<PropertySection> BuildStatusSections(IEnumerable<RentalProperty> pool, string filter)
+        {
+            var live = pool.Where(p => !p.IsDraft).ToList();
+
+            var defs = new[]
+            {
+                (Key: "Available", Title: "Available Now", Subtitle: "Ready for move-in"),
+                (Key: "Reserved",  Title: "Reserved",      Subtitle: "Booked, waiting for move-in"),
+                (Key: "Occupied",  Title: "Occupied",      Subtitle: "Currently rented"),
+            };
+
+            var result = new List<PropertySection>();
+            foreach (var d in defs)
+            {
+                if (filter != "All" && filter != d.Key) continue;
+
+                var items = live.Where(p => p.Status == d.Key)
+                                .OrderByDescending(p => p.IsNew)
+                                .ThenByDescending(p => p.Popularity)
+                                .ToList();
+                if (items.Count == 0) continue;
+
+                result.Add(new PropertySection
+                {
+                    Key = d.Key,
+                    Title = d.Title,
+                    Subtitle = d.Subtitle,
+                    Items = items,
+                    ShowDivider = result.Count > 0
                 });
             }
             return result;

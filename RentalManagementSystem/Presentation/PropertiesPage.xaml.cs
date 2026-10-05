@@ -8,7 +8,6 @@ namespace RentalManagementSystem.Presentation
 {
     public partial class UnitsPage : UserControl
     {
-        private const int MaxPerSection = 4;   // cards/rows per section when "All" is selected
         private string _filter = "All";
 
         public UnitsPage()
@@ -32,6 +31,67 @@ namespace RentalManagementSystem.Presentation
                 PropertyStore.Add(PropertyStore.FromForm(addWindow.Result));
                 LoadSections();
             }
+        }
+
+        // ---------- Read more / Edit / Delete (buttons inside the cards and rows) ----------
+
+        private void Item_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is not Button b || b.DataContext is not RentalProperty p) return;
+
+            switch (b.Tag as string)
+            {
+                case "Edit":
+                    EditProperty(p);
+                    e.Handled = true;
+                    break;
+                case "Delete":
+                    DeleteProperty(p);
+                    e.Handled = true;
+                    break;
+                case "Read":
+                    ShowDetails(p);
+                    e.Handled = true;
+                    break;
+            }
+        }
+
+        private void EditProperty(RentalProperty p)
+        {
+            var editWindow = new EditPropertyWindow(p)
+            {
+                Owner = Window.GetWindow(this)
+            };
+
+            // The window only changes the property when Save is pressed and the form is valid.
+            if (editWindow.ShowDialog() == true)
+            {
+                PropertyStore.NotifyUpdated(p);
+                LoadSections();
+            }
+        }
+
+        private void DeleteProperty(RentalProperty p)
+        {
+            var answer = MessageBox.Show(
+                Window.GetWindow(this),
+                $"Delete \"{p.Name}\"?\n\nThis removes it from the Properties and Overview pages.",
+                "Delete property",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (answer != MessageBoxResult.Yes) return;
+
+            if (PropertyStore.Remove(p))
+                LoadSections();
+        }
+
+        private void ShowDetails(RentalProperty p)
+        {
+            MessageBox.Show(
+                $"{p.Name}\n{p.Location}\n\n{p.Description}\n\n{p.Summary}\n{p.Status} · {p.PriceWithUnit}",
+                "Property details");
         }
 
         // ---------- View switch, chips, search ----------
@@ -74,10 +134,7 @@ namespace RentalManagementSystem.Presentation
                     Has(p.Status, query) || Has(p.RoomType, query));
             }
 
-            // While searching, show every match instead of just the top few per category.
-            int perSection = query.Length > 0 ? int.MaxValue : MaxPerSection;
-
-            var sections = PropertyStore.BuildSections(pool, _filter, perSection, includeDrafts: true);
+            var sections = PropertyStore.BuildStatusSections(pool, _filter);
 
             icListSections.ItemsSource = sections;
             icGallerySections.ItemsSource = sections;
@@ -86,18 +143,6 @@ namespace RentalManagementSystem.Presentation
 
         private static bool Has(string text, string query) =>
             !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
-
-        // ---------- Gallery "Read more" (placeholder: replace with a details popup) ----------
-
-        private void ReadMore_Click(object sender, RoutedEventArgs e)
-        {
-            if (e.OriginalSource is Button b && b.DataContext is RentalProperty p)
-            {
-                MessageBox.Show(
-                    $"{p.Name}\n{p.Location}\n\n{p.Description}\n\n{p.Summary}\n{p.Status} · {p.PriceWithUnit}",
-                    "Property details");
-            }
-        }
     }
 
     // Kept only in case another page still references it. If the build has no errors

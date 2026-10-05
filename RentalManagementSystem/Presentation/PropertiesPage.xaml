@@ -58,10 +58,15 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Properties: Unit Inventory" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Manage floor plans, active leases, and unit availability." Style="{StaticResource PageSubtitle}"/>
+                <!-- Page Subtitle -->
+                <TextBlock Text="Manage floor plans, active leases, and unit availability." 
+                           Style="{StaticResource PageSubtitle}" 
+                           FontWeight="SemiBold" 
+                           Foreground="#1E3223"/>
             </StackPanel>
+            
             <Button Grid.Column="1" Content="+ Add Property" Style="{StaticResource PrimaryButton}"
                     VerticalAlignment="Center" Click="AddProperty_Click"/>
         </Grid>

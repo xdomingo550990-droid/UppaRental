@@ -18,7 +18,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -28,10 +27,14 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Billing and Payments: Rent Ledger" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Track invoices, collected rent, and outstanding balances." Style="{StaticResource PageSubtitle}"/>
+                <TextBlock Text="Track invoices, collected rent, and outstanding balances." 
+                           Style="{StaticResource PageSubtitle}"
+                           FontWeight="SemiBold"
+                           Foreground="#1E3223"/>
             </StackPanel>
+            
             <Button Grid.Column="1" Content="+ Create Invoice" Style="{StaticResource PrimaryButton}"
                     VerticalAlignment="Center" Click="CreateInvoice_Click"/>
         </Grid>
@@ -71,10 +74,16 @@
             </Border>
         </Grid>
 
-        <!-- 3. Filters + search -->
-        <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,0,0,20">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+        <!-- 3. Main Invoices Card (Filters + DataGrid) -->
+        <Border Grid.Row="2" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Filter Pills -->
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
                     <RadioButton x:Name="rbAll" Content="All" Tag="All" IsChecked="True"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="rbPaid" Content="Paid" Tag="Paid"
@@ -85,88 +94,60 @@
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                 </StackPanel>
 
-                <Border Style="{StaticResource InputBorder}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#607464"
-                                   VerticalAlignment="Center" Margin="14,0,0,0"/>
-                        <TextBox x:Name="txtSearch" Grid.Column="1" Style="{StaticResource PlainTextBox}"
-                                 TextChanged="Search_TextChanged"/>
-                        <TextBlock Grid.Column="1" Text="Search invoice #, renter, or unit..." IsHitTestVisible="False"
-                                   Foreground="#8C9E90" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0">
-                            <TextBlock.Style>
+                <!-- Invoices Table -->
+                <DataGrid Grid.Row="1" x:Name="dgInvoices" Style="{StaticResource AppDataGrid}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="120">
+                            <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=txtSearch}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
+                                    <Setter Property="Foreground" Value="#27894C"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
                                 </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </Border>
-            </StackPanel>
-        </Border>
-
-        <!-- 4. Invoices table -->
-        <Border Grid.Row="3" Style="{StaticResource Card}">
-            <DataGrid x:Name="dgInvoices" Style="{StaticResource AppDataGrid}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="120">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="#27894C"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="RENTER" Binding="{Binding Renter}" Width="*"/>
-                    <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="100"/>
-                    <DataGridTextColumn Header="PERIOD" Binding="{Binding Period}" Width="110"/>
-                    <DataGridTextColumn Header="DUE DATE" Binding="{Binding DueDate}" Width="120"/>
-                    <DataGridTextColumn Header="AMOUNT" Binding="{Binding AmountText}" Width="130">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTemplateColumn Header="STATUS" Width="110">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource StatusBadge}">
-                                    <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="Bold"/>
-                                </Border>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="ACTIONS" Width="140">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
-                                    <Button Content="Mark Paid" Click="MarkPaid_Click">
-                                        <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource LinkButton}">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Status}" Value="Paid">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="RENTER" Binding="{Binding Renter}" Width="*"/>
+                        <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="100"/>
+                        <DataGridTextColumn Header="PERIOD" Binding="{Binding Period}" Width="110"/>
+                        <DataGridTextColumn Header="DUE DATE" Binding="{Binding DueDate}" Width="120"/>
+                        <DataGridTextColumn Header="AMOUNT" Binding="{Binding AmountText}" Width="130">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="STATUS" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource StatusBadge}">
+                                        <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="Bold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="ACTIONS" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
+                                        <Button Content="Mark Paid" Click="MarkPaid_Click">
+                                            <Button.Style>
+                                                <Style TargetType="Button" BasedOn="{StaticResource LinkButton}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Paid">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

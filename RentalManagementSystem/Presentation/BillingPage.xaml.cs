@@ -21,7 +21,6 @@ namespace RentalManagementSystem.Presentation
         public decimal Amount { get; set; }
         public string AmountText => "₱" + Amount.ToString("N2", CultureInfo.InvariantCulture);
 
-        // Paid, Pending, Overdue. Notifies the table so the badge updates instantly.
         public string Status
         {
             get => _status;
@@ -38,7 +37,6 @@ namespace RentalManagementSystem.Presentation
 
     public partial class BillingPage : UserControl
     {
-        // SAMPLE DATA: replace with invoices loaded from your database / DAO.
         private readonly ObservableCollection<InvoiceRow> _invoices = new ObservableCollection<InvoiceRow>
         {
             new InvoiceRow { InvoiceNo = "INV-2001", Renter = "Juan Dela Cruz",  Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" },
@@ -51,6 +49,7 @@ namespace RentalManagementSystem.Presentation
 
         private ICollectionView _view = null!;
         private string _statusFilter = "All";
+        private string _globalSearchQuery = "";
 
         public BillingPage()
         {
@@ -63,6 +62,14 @@ namespace RentalManagementSystem.Presentation
             UpdateSummary();
         }
 
+        // ---------- Global Search Hook ----------
+
+        public void ApplyGlobalSearch(string query)
+        {
+            _globalSearchQuery = query?.Trim() ?? "";
+            _view?.Refresh();
+        }
+
         // ---------- Filtering ----------
 
         private bool Matches(object item)
@@ -71,12 +78,11 @@ namespace RentalManagementSystem.Presentation
 
             if (_statusFilter != "All" && inv.Status != _statusFilter) return false;
 
-            var q = txtSearch?.Text?.Trim() ?? "";
-            if (q.Length == 0) return true;
+            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
 
-            return inv.InvoiceNo.Contains(q, StringComparison.OrdinalIgnoreCase)
-                || inv.Renter.Contains(q, StringComparison.OrdinalIgnoreCase)
-                || inv.Unit.Contains(q, StringComparison.OrdinalIgnoreCase);
+            return inv.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || inv.Renter.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || inv.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
@@ -84,8 +90,6 @@ namespace RentalManagementSystem.Presentation
             if (sender is RadioButton rb) _statusFilter = rb.Tag?.ToString() ?? "All";
             _view?.Refresh();
         }
-
-        private void Search_TextChanged(object sender, TextChangedEventArgs e) => _view?.Refresh();
 
         // ---------- Summary ----------
 
@@ -113,7 +117,6 @@ namespace RentalManagementSystem.Presentation
 
         // ---------- Buttons ----------
 
-        // Works now: flips the invoice to Paid and refreshes the totals.
         private void MarkPaid_Click(object sender, RoutedEventArgs e)
         {
             if (((FrameworkElement)sender).DataContext is InvoiceRow inv)
@@ -121,11 +124,9 @@ namespace RentalManagementSystem.Presentation
                 inv.Status = "Paid";
                 _view.Refresh();
                 UpdateSummary();
-                // TODO: save the payment to your database here.
             }
         }
 
-        // Placeholders: hook these up next.
         private void CreateInvoice_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("The Create Invoice form goes here.", "Create Invoice");

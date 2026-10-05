@@ -27,10 +27,15 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Settings" Style="{StaticResource PageTitle}"/>
-                    <TextBlock Text="Manage your profile, rental preferences, and notifications." Style="{StaticResource PageSubtitle}"/>
+                    <!-- Page Subtitle -->
+                    <TextBlock Text="Manage your profile, rental preferences, and notifications." 
+                               Style="{StaticResource PageSubtitle}"
+                               FontWeight="SemiBold"
+                               Foreground="#1E3223"/>
                 </StackPanel>
+                
                 <Button Grid.Column="1" Content="Save Changes" Style="{StaticResource PrimaryButton}"
                         VerticalAlignment="Center" Click="Save_Click"/>
             </Grid>

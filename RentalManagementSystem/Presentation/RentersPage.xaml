@@ -32,10 +32,15 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+            
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Renters: Tenant Directory" Style="{StaticResource PageTitle}"/>
-                <TextBlock Text="Manage tenant profiles, lease periods, and rent status." Style="{StaticResource PageSubtitle}"/>
+                <!-- Page Subtitle -->
+                <TextBlock Text="Manage tenant profiles, lease periods, and rent status." 
+                           Style="{StaticResource PageSubtitle}"
+                           FontWeight="SemiBold"
+                           Foreground="#1E3223"/>
             </StackPanel>
+            
             <Button Grid.Column="1" Content="+ Add Renter" Style="{StaticResource PrimaryButton}"
                     VerticalAlignment="Center" Click="AddRenter_Click"/>
         </Grid>

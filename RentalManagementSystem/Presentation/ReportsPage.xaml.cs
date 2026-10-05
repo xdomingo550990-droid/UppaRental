@@ -1,66 +1,186 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace RentalManagementSystem.Presentation;
 
 public partial class ReportsPage : UserControl
 {
-    private sealed record Row(string ReportId, DateTime DateGenerated, string ReportType,
-                              string Reference, decimal Amount, string Status);
+    private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
+
+    // Sample record (your teammates can replace Samples with database data later)
+    private sealed record Lease(string Code, string Unit, string UnitType, string Tenant,
+                                DateTime Start, DateTime End, decimal Rent, DateTime Updated, string Payment)
+    {
+        public bool Occupied => Tenant != "—";
+    }
+
+    // One display row; every report type is shown through this shape
+    private sealed record GridRow(string C1, string C2, string C3, string C4, string C5, string Status, string Tone);
 
     private sealed record LegendItem(string Label, string Display, Brush Color);
+
+    private static Lease L(string code, string unit, string type, string tenant,
+                           int startMonthsAgo, decimal rent, int updatedDaysAgo, string payment) =>
+        new(code, unit, type, tenant,
+            DateTime.Today.AddMonths(-startMonthsAgo), DateTime.Today.AddMonths(-startMonthsAgo + 12),
+            rent, DateTime.Today.AddDays(-updatedDaysAgo), payment);
+
+    private static readonly Lease[] Samples =
+    {
+        L("LS-2001", "Unit 105", "Studio",   "Ana Reyes",       4, 12500m,  1, "Paid"),
+        L("LS-2002", "Unit 212", "Deluxe",   "Carlo Mendoza",   8, 28900m,  2, "Paid"),
+        L("LS-2003", "Unit 301", "Standard", "Liza Garcia",    11,  9800m,  4, "Pending"),
+        L("LS-2004", "Unit 118", "Studio",   "Mark Villanueva", 6, 15000m,  5, "Overdue"),
+        L("LS-2005", "Unit 204", "Suite",    "Bea Navarro",     3, 21400m,  7, "Paid"),
+        L("LS-2006", "Unit 110", "Deluxe",   "Paolo Aquino",    9, 33000m,  9, "Paid"),
+        L("LS-2007", "Unit 307", "Standard", "Jenny Ramos",     2,  7600m, 12, "Pending"),
+        L("LS-2008", "Unit 120", "Studio",   "Rico Bautista",   5, 18200m, 15, "Paid"),
+        L("—",       "Unit 215", "Standard", "—",               0,  7600m, 20, "—"),
+        L("—",       "Unit 308", "Suite",    "—",               0, 24000m, 26, "—"),
+    };
+
+    private static readonly string[] ReportNames = { "Rental Report", "Payment Report", "Occupancy / Unit Status" };
 
     public ReportsPage()
     {
         InitializeComponent();
-
-        StartPicker.SelectedDate = DateTime.Today.AddDays(-30);
+        StartPicker.SelectedDate = DateTime.Today.AddDays(-45);
         EndPicker.SelectedDate = DateTime.Today;
-
-        // Sample rows for the design. Your teammates can replace these with database data later.
-        var rows = new[]
-        {
-            new Row("RPT-1001", DateTime.Today.AddDays(-1),  "Payment Report",          "Ana Reyes - Unit 105",       12500m, "Paid"),
-            new Row("RPT-1002", DateTime.Today.AddDays(-2),  "Rental Report",           "Carlo Mendoza - Unit 212",   28900m, "Paid"),
-            new Row("RPT-1003", DateTime.Today.AddDays(-4),  "Rental Report",           "Liza Garcia - Unit 301",      9800m, "Pending"),
-            new Row("RPT-1004", DateTime.Today.AddDays(-5),  "Payment Report",          "Mark Villanueva - Unit 118", 15000m, "Overdue"),
-            new Row("RPT-1005", DateTime.Today.AddDays(-7),  "Occupancy / Unit Status", "Bea Navarro - Unit 204",     21400m, "Paid"),
-            new Row("RPT-1006", DateTime.Today.AddDays(-9),  "Rental Report",           "Paolo Aquino - Unit 110",    33000m, "Paid"),
-            new Row("RPT-1007", DateTime.Today.AddDays(-12), "Occupancy / Unit Status", "Jenny Ramos - Unit 307",      7600m, "Pending"),
-            new Row("RPT-1008", DateTime.Today.AddDays(-15), "Payment Report",          "Rico Bautista - Unit 120",   18200m, "Paid"),
-        };
-
-        ReportsGrid.ItemsSource = rows;
-        BuildPie(rows);
+        Generate();
     }
 
-    // Draws the pie from the rows' Status values, so the chart always matches the table.
-    private void BuildPie(Row[] rows)
+    private void GenerateButton_Click(object sender, RoutedEventArgs e) => Generate();
+
+    private void Generate()
     {
-        const double size = 200;
+        DateTime from = StartPicker.SelectedDate ?? DateTime.MinValue;
+        DateTime to = EndPicker.SelectedDate ?? DateTime.MaxValue;
+
+        var inRange = Samples.Where(l => l.Updated.Date >= from.Date && l.Updated.Date <= to.Date).ToList();
+        var leases = inRange.Where(l => l.Occupied).ToList();
+
+        int kind = Math.Max(0, ReportTypeBox.SelectedIndex);
+        string[] headers;
+        GridRow[] rows;
+
+        switch (kind)
+        {
+            case 1: // Payment Report
+                headers = new[] { "Payment ID", "Tenant", "Unit", "Date Paid", "Amount", "Payment Status" };
+                rows = leases.Select(l => new GridRow(
+                    l.Code.Replace("LS", "PAY"), l.Tenant, l.Unit,
+                    l.Updated.ToString("MMM d, yyyy", Us), Money(l.Rent), l.Payment, Tone(l.Payment))).ToArray();
+                break;
+
+            case 2: // Occupancy / Unit Status
+                headers = new[] { "Unit", "Unit Type", "Tenant", "Last Update", "Monthly Rate", "Unit Status" };
+                rows = inRange.Select(l =>
+                {
+                    string s = l.Occupied ? "Occupied" : "Vacant";
+                    return new GridRow(l.Unit, l.UnitType, l.Tenant,
+                        l.Updated.ToString("MMM d, yyyy", Us), Money(l.Rent), s, Tone(s));
+                }).ToArray();
+                break;
+
+            default: // Rental Report
+                headers = new[] { "Lease ID", "Tenant", "Unit", "Lease Period", "Monthly Rent", "Lease Status" };
+                rows = leases.Select(l =>
+                {
+                    string s = l.End < DateTime.Today.AddDays(45) ? "Expiring" : "Active";
+                    string period = l.Start.ToString("MMM yyyy", Us) + " – " + l.End.ToString("MMM yyyy", Us);
+                    return new GridRow(l.Code, l.Tenant, l.Unit, period, Money(l.Rent), s, Tone(s));
+                }).ToArray();
+                break;
+        }
+
+        SetColumns(headers);
+        ReportsGrid.ItemsSource = rows;
+        TableTitle.Text = $"{ReportNames[kind]}  ·  {rows.Length} records";
+
+        // KPI cards
+        RevenueText.Text = Money(leases.Where(l => l.Payment == "Paid").Sum(l => l.Rent));
+        OutstandingText.Text = Money(leases.Where(l => l.Payment is "Pending" or "Overdue").Sum(l => l.Rent));
+        OccupancyText.Text = inRange.Count == 0 ? "0%" : ((double)leases.Count / inRange.Count).ToString("P1", Us);
+        LeasesText.Text = leases.Count(l => l.End >= DateTime.Today).ToString();
+
+        BuildDonut(leases);
+    }
+
+    // Rebuilds the DataGrid columns so they match the selected report type
+    private void SetColumns(string[] headers)
+    {
+        ReportsGrid.Columns.Clear();
+        string[] props = { nameof(GridRow.C1), nameof(GridRow.C2), nameof(GridRow.C3), nameof(GridRow.C4), nameof(GridRow.C5) };
+        double[] widths = { 1.1, 1.6, 1.3, 1.6, 1.3 };
+
+        for (int i = 0; i < 5; i++)
+        {
+            var col = new DataGridTextColumn
+            {
+                Header = headers[i],
+                Binding = new Binding(props[i]),
+                Width = new DataGridLength(widths[i], DataGridLengthUnitType.Star),
+                MinWidth = 100
+            };
+            if (i == 0) col.ElementStyle = (Style)FindResource("IdText");
+            if (i == 4)
+            {
+                col.ElementStyle = (Style)FindResource("AmountText");
+                col.HeaderStyle = (Style)FindResource("HeaderRight");
+            }
+            ReportsGrid.Columns.Add(col);
+        }
+
+        ReportsGrid.Columns.Add(new DataGridTemplateColumn
+        {
+            Header = headers[5],
+            CellTemplate = (DataTemplate)FindResource("StatusBadge"),
+            Width = new DataGridLength(1.2, DataGridLengthUnitType.Star),
+            MinWidth = 110
+        });
+    }
+
+    private static string Money(decimal v) => "₱ " + v.ToString("N2", Us);
+
+    private static string Tone(string status) => status switch
+    {
+        "Paid" or "Active" or "Occupied" => "good",
+        "Pending" or "Expiring" => "warn",
+        "Overdue" => "bad",
+        _ => "neutral"
+    };
+
+    // Payment status donut
+    private void BuildDonut(List<Lease> leases)
+    {
+        const double size = 180;
         double radius = size / 2;
         var center = new Point(radius, radius);
         var legend = new List<LegendItem>();
         double angle = -90;   // start at 12 o'clock
 
-        foreach (var (status, hex) in new[] { ("Paid", "#12874F"), ("Pending", "#F59E0B"), ("Overdue", "#EF4444") })
-        {
-            int count = rows.Count(r => r.Status == status);
-            if (count == 0) continue;
+        PieCanvas.Children.Clear();
+        int total = leases.Count;
+
+        foreach (var (status, hex) in new[] { ("Paid", "#12874F"), ("Pending", "#F59E0B"), ("Overdue", "#EF4444") })        {
+            int count = leases.Count(l => l.Payment == status);
+            if (count == 0 || total == 0) continue;
 
             var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
-            double sweep = 360.0 * count / rows.Length;
+            double sweep = 360.0 * count / total;
 
             PieCanvas.Children.Add(MakeSlice(center, radius, angle, sweep, brush));
-            legend.Add(new LegendItem(status, $"{count}  ({(double)count / rows.Length:P0})", brush));
+            legend.Add(new LegendItem(status, $"{count}  ({(double)count / total:P0})", brush));
             angle += sweep;
         }
 
-        PieTotal.Text = rows.Length.ToString();
+        PieTotal.Text = total.ToString();
         LegendList.ItemsSource = legend;
     }
 
@@ -80,7 +200,7 @@ public partial class ReportsPage : UserControl
         {
             Data = new PathGeometry(new[] { figure }),
             Fill = fill,
-            Stroke = Brushes.White,          // white gaps between slices
+            Stroke = Brushes.White,
             StrokeThickness = 3,
             StrokeLineJoin = PenLineJoin.Round
         };

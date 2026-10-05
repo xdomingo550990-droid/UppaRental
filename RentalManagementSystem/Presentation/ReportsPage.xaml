@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13"
              TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType"
-             Background="#F4F5F7">
+             Background="Transparent">
 
     <UserControl.Resources>
-        <!-- Palette: change these to re-theme the whole screen -->
+        <!-- Palette: change these to re-theme the whole page -->
         <SolidColorBrush x:Key="Surface" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="FieldBg" Color="#F6F7F9"/>
         <SolidColorBrush x:Key="Accent" Color="#12874F"/>
@@ -47,7 +47,7 @@
             <Setter Property="Margin" Value="4,0,0,6"/>
         </Style>
 
-        <!-- Rounded dropdown items -->
+        <!-- Dropdown -->
         <Style TargetType="ComboBoxItem">
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Template">
@@ -68,8 +68,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Borderless ComboBox with soft popup (sits inside a Field border) -->
         <Style TargetType="ComboBox">
             <Setter Property="Height" Value="40"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -113,25 +111,36 @@
             </Setter>
         </Style>
 
+        <!-- Date picker (no white patch behind the text) -->
+        <Style TargetType="DatePickerTextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePickerTextBox">
+                        <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="DatePicker">
             <Setter Property="Height" Value="40"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Padding" Value="10,0,4,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Foreground" Value="{StaticResource Ink}"/>
         </Style>
 
-        <!-- Pill buttons -->
-        <Style x:Key="PillButton" TargetType="Button">
+        <!-- Pill button -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Height" Value="42"/>
-            <Setter Property="Padding" Value="20,0"/>
-            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Padding" Value="24,0"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{StaticResource Ink}"/>
-            <Setter Property="Background" Value="{StaticResource Surface}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -145,41 +154,31 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="bd" Property="Opacity" Value="0.4"/>
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource PillButton}">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
 
-        <!-- KPI text -->
+        <!-- KPI -->
         <Style x:Key="KpiTitle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-        </Style>
-        <Style x:Key="KpiValue" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="28"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Margin" Value="0,8,0,2"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
         <Style x:Key="KpiCaption" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
         <Style x:Key="IconBadge" TargetType="Border">
             <Setter Property="Width" Value="44"/>
             <Setter Property="Height" Value="44"/>
             <Setter Property="CornerRadius" Value="22"/>
             <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
         </Style>
         <Style x:Key="Glyph" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
@@ -258,26 +257,47 @@
             <Setter Property="TextAlignment" Value="Right"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
+
+        <!-- Status pill used by every report type (colour comes from the row's Tone) -->
+        <DataTemplate x:Key="StatusBadge">
+            <Border CornerRadius="12" Padding="12,4" HorizontalAlignment="Left">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="#EEF0F2"/>
+                        <Setter Property="TextElement.Foreground" Value="#4B5563"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Tone}" Value="good">
+                                <Setter Property="Background" Value="#E6F4EC"/>
+                                <Setter Property="TextElement.Foreground" Value="#0E6B3E"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Tone}" Value="warn">
+                                <Setter Property="Background" Value="#FEF3C7"/>
+                                <Setter Property="TextElement.Foreground" Value="#92400E"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Tone}" Value="bad">
+                                <Setter Property="Background" Value="#FDE8E8"/>
+                                <Setter Property="TextElement.Foreground" Value="#B42318"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="SemiBold"/>
+            </Border>
+        </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Margin="28">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        
-
-        <!-- 1. Top bar / filters -->
-        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="22,16,22,20" Margin="0,0,0,20">
+        <!-- SECTION 1: Filters -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Padding="22,16,22,20" Margin="0,0,0,18">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.4*"/>
-                    <ColumnDefinition Width="1*"/>
-                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1.6*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -286,7 +306,7 @@
                 <StackPanel Grid.Column="0" Margin="0,0,14,0">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="Report type"/>
                     <Border Style="{StaticResource Field}">
-                        <ComboBox SelectedIndex="0">
+                        <ComboBox x:Name="ReportTypeBox" SelectedIndex="0">
                             <ComboBoxItem Content="Rental Report"/>
                             <ComboBoxItem Content="Payment Report"/>
                             <ComboBoxItem Content="Occupancy / Unit Status"/>
@@ -299,46 +319,19 @@
                         <DatePicker x:Name="StartPicker"/>
                     </Border>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Margin="0,0,14,0">
+                <StackPanel Grid.Column="2" Margin="0,0,16,0">
                     <TextBlock Style="{StaticResource FieldLabel}" Text="End date"/>
                     <Border Style="{StaticResource Field}">
                         <DatePicker x:Name="EndPicker"/>
                     </Border>
                 </StackPanel>
-                <StackPanel Grid.Column="3" Margin="0,0,14,0">
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="Room type"/>
-                    <Border Style="{StaticResource Field}">
-                        <ComboBox SelectedIndex="0">
-                            <ComboBoxItem Content="All"/>
-                            <ComboBoxItem Content="Standard"/>
-                            <ComboBoxItem Content="Deluxe"/>
-                            <ComboBoxItem Content="Suite"/>
-                            <ComboBoxItem Content="Studio"/>
-                        </ComboBox>
-                    </Border>
-                </StackPanel>
-                <StackPanel Grid.Column="4" Margin="0,0,14,0">
-                    <TextBlock Style="{StaticResource FieldLabel}" Text="Payment status"/>
-                    <Border Style="{StaticResource Field}">
-                        <ComboBox SelectedIndex="0">
-                            <ComboBoxItem Content="All"/>
-                            <ComboBoxItem Content="Paid"/>
-                            <ComboBoxItem Content="Pending"/>
-                            <ComboBoxItem Content="Overdue"/>
-                        </ComboBox>
-                    </Border>
-                </StackPanel>
-
-                <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Bottom">
-                    <Button Style="{StaticResource PrimaryButton}" Content="Generate report"/>
-                    <Button Style="{StaticResource PillButton}" Content="Export to PDF"/>
-                    <Button Style="{StaticResource PillButton}" Content="Export to Excel/CSV"/>
-                </StackPanel>
+                <Button Grid.Column="3" x:Name="GenerateButton" Style="{StaticResource PrimaryButton}"
+                        Content="Generate Report" VerticalAlignment="Bottom" Click="GenerateButton_Click"/>
             </Grid>
         </Border>
 
-        <!-- 2. KPI cards -->
-        <Grid Grid.Row="2" Margin="0,0,0,20">
+        <!-- SECTION 2: KPI cards -->
+        <Grid Grid.Row="1" Margin="0,0,0,18">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition/>
@@ -346,7 +339,7 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
 
-            <!-- Total Revenue (highlight card) -->
+            <!-- Total Revenue (green gradient highlight) -->
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,16,0"
                     BorderBrush="Transparent" TextElement.Foreground="White">
                 <Border.Background>
@@ -357,16 +350,19 @@
                 </Border.Background>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiTitle}" Text="Total revenue" Foreground="#D4F0E1"/>
-                        <TextBlock Style="{StaticResource KpiValue}" Text="₱ 125,000.00"/>
-                        <TextBlock Style="{StaticResource KpiCaption}" Text="Paid records in range" Foreground="#D4F0E1"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" Margin="0,8,0,4">
+                            <TextBlock x:Name="RevenueText" FontSize="26" FontWeight="SemiBold" Text="₱ 0.00"/>
+                        </Viewbox>
+                        <TextBlock Style="{StaticResource KpiCaption}" Text="Paid rent in range" Foreground="#D4F0E1"/>
                     </StackPanel>
                     <Border Grid.Column="1" Style="{StaticResource IconBadge}" Background="#33FFFFFF">
-                        <TextBlock Style="{StaticResource Glyph}" FontFamily="Segoe UI" FontWeight="Bold" Foreground="White" Text="₱"/>
+                        <TextBlock Style="{StaticResource Glyph}" FontFamily="Segoe UI" FontWeight="Bold"
+                                   Foreground="White" Text="₱"/>
                     </Border>
                 </Grid>
             </Border>
@@ -375,12 +371,14 @@
             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0,0,16,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiTitle}" Text="Outstanding balance"/>
-                        <TextBlock Style="{StaticResource KpiValue}" Text="₱ 38,500.00"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" Margin="0,8,0,4">
+                            <TextBlock x:Name="OutstandingText" FontSize="26" FontWeight="SemiBold" Text="₱ 0.00"/>
+                        </Viewbox>
                         <TextBlock Style="{StaticResource KpiCaption}" Text="Pending and overdue"/>
                     </StackPanel>
                     <Border Grid.Column="1" Style="{StaticResource IconBadge}" Background="#FEF3C7">
@@ -393,13 +391,15 @@
             <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0,0,16,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
                         <TextBlock Style="{StaticResource KpiTitle}" Text="Occupancy rate"/>
-                        <TextBlock Style="{StaticResource KpiValue}" Text="78.5%"/>
-                        <TextBlock Style="{StaticResource KpiCaption}" Text="Occupied rooms vs. capacity"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" Margin="0,8,0,4">
+                            <TextBlock x:Name="OccupancyText" FontSize="26" FontWeight="SemiBold" Text="0%"/>
+                        </Viewbox>
+                        <TextBlock Style="{StaticResource KpiCaption}" Text="Occupied vs. total units"/>
                     </StackPanel>
                     <Border Grid.Column="1" Style="{StaticResource IconBadge}" Background="#E0EDFF">
                         <TextBlock Style="{StaticResource Glyph}" Foreground="#2563EB" Text="&#xE80F;"/>
@@ -407,17 +407,19 @@
                 </Grid>
             </Border>
 
-            <!-- Active Reservations -->
+            <!-- Active Leases -->
             <Border Grid.Column="3" Style="{StaticResource Card}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource KpiTitle}" Text="Active reservations"/>
-                        <TextBlock Style="{StaticResource KpiValue}" Text="24"/>
-                        <TextBlock Style="{StaticResource KpiCaption}" Text="Currently booked"/>
+                        <TextBlock Style="{StaticResource KpiTitle}" Text="Active leases"/>
+                        <Viewbox StretchDirection="DownOnly" HorizontalAlignment="Left" Margin="0,8,0,4">
+                            <TextBlock x:Name="LeasesText" FontSize="26" FontWeight="SemiBold" Text="0"/>
+                        </Viewbox>
+                        <TextBlock Style="{StaticResource KpiCaption}" Text="Currently running"/>
                     </StackPanel>
                     <Border Grid.Column="1" Style="{StaticResource IconBadge}" Background="#EDE9FE">
                         <TextBlock Style="{StaticResource Glyph}" Foreground="#7C3AED" Text="&#xE787;"/>
@@ -426,67 +428,35 @@
             </Border>
         </Grid>
 
-        <!-- 3. Data area: table + pie chart -->
-        <Grid Grid.Row="3">
+        <!-- SECTION 3: Data grid (left) + donut chart (right) -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="310"/>
+                <ColumnDefinition Width="280"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="12,12,12,8" Margin="0,0,20,0">
-                <DataGrid x:Name="ReportsGrid">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Report ID" Binding="{Binding ReportId}"
-                                            ElementStyle="{StaticResource IdText}" Width="1.1*"/>
-                        <DataGridTextColumn Header="Date Generated"
-                                            Binding="{Binding DateGenerated, StringFormat='MMM dd, yyyy', ConverterCulture=en-US}"
-                                            Width="1.2*"/>
-                        <DataGridTextColumn Header="Report Type" Binding="{Binding ReportType}" Width="1.6*"/>
-                        <DataGridTextColumn Header="Tenant/Reference" Binding="{Binding Reference}" Width="2*"/>
-                        <DataGridTextColumn Header="Amount"
-                                            Binding="{Binding Amount, StringFormat='₱ {0:N2}', ConverterCulture=en-US}"
-                                            HeaderStyle="{StaticResource HeaderRight}"
-                                            ElementStyle="{StaticResource AmountText}" Width="1.2*"/>
-                        <DataGridTemplateColumn Header="Status" Width="1*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border CornerRadius="12" Padding="12,4" HorizontalAlignment="Left">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Setter Property="Background" Value="#FEF3C7"/>
-                                                <Setter Property="TextElement.Foreground" Value="#92400E"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Status}" Value="Paid">
-                                                        <Setter Property="Background" Value="#E6F4EC"/>
-                                                        <Setter Property="TextElement.Foreground" Value="#0E6B3E"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="Overdue">
-                                                        <Setter Property="Background" Value="#FDE8E8"/>
-                                                        <Setter Property="TextElement.Foreground" Value="#B42318"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="{Binding Status}" FontSize="12" FontWeight="SemiBold"/>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
+            <Border Grid.Column="0" Style="{StaticResource Card}" Padding="14,18,14,10" Margin="0,0,18,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="TableTitle" Grid.Row="0" FontSize="15" FontWeight="SemiBold"
+                               Margin="14,0,0,10"/>
+                    <DataGrid x:Name="ReportsGrid" Grid.Row="1"/>
+                </Grid>
             </Border>
 
-            <!-- Pie chart card -->
             <Border Grid.Column="1" Style="{StaticResource Card}">
                 <StackPanel>
-                    <TextBlock Text="Payment status" FontSize="16" FontWeight="SemiBold"/>
-                    <TextBlock Text="Share of records by status" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
+                    <TextBlock Text="Payment status" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="Share of rent records" Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
 
-                    <Grid Width="200" Height="200" Margin="0,22,0,22">
-                        <Canvas x:Name="PieCanvas" Width="200" Height="200"/>
-                        <Ellipse Width="118" Height="118" Fill="White"/>
+                    <Grid Width="180" Height="180" Margin="0,22,0,22">
+                        <Canvas x:Name="PieCanvas" Width="180" Height="180"/>
+                        <Ellipse Width="106" Height="106" Fill="White"/>
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock x:Name="PieTotal" FontSize="28" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="PieTotal" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                             <TextBlock Text="records" Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
@@ -509,22 +479,6 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
-        </Grid>
-
-        <!-- 4. Footer -->
-        <Grid Grid.Row="4" Margin="6,18,6,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Foreground="{StaticResource Muted}"
-                       Text="Showing 1–8 of 8 records  |  Sample date range"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <Button Style="{StaticResource PillButton}" Content="Previous" IsEnabled="False"/>
-                <TextBlock Text="Page 1 of 1" VerticalAlignment="Center" Margin="18,0,8,0"
-                           FontWeight="SemiBold" Foreground="{StaticResource Ink}"/>
-                <Button Style="{StaticResource PillButton}" Content="Next" IsEnabled="False"/>
-            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

@@ -39,12 +39,17 @@ namespace RentalManagementSystem.Presentation
 
         private void NavButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not RadioButton nav) return;
+            var nav = sender as RadioButton;
+            if (nav == null) return;
 
             txtPageTitle.Text = nav.Content?.ToString();
 
-            // The search bar is hidden on the Settings page
-            SearchBar.Visibility = nav.Name == nameof(btnSettings) ? Visibility.Collapsed : Visibility.Visible;
+            // Start every page with an empty search box
+            txtSearch.Clear();
+
+            // The top search bar is hidden on the Properties and Settings pages
+            bool hideSearch = nav.Name == nameof(btnSettings) || nav.Name == nameof(btnProperties);
+            SearchBar.Visibility = hideSearch ? Visibility.Collapsed : Visibility.Visible;
 
             MainContentFrame.Content = nav.Name switch
             {
@@ -58,6 +63,15 @@ namespace RentalManagementSystem.Presentation
                 nameof(btnSettings) => new SettingsPage(),
                 _ => MainContentFrame.Content
             };
+        }
+
+        // Sends what you type in the top search bar to the Overview page
+        private void Search_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (MainContentFrame == null) return;
+
+            if (MainContentFrame.Content is OverviewPage overview)
+                overview.SetSearch(txtSearch.Text);
         }
 
         private void LogOutButton_Click(object sender, RoutedEventArgs e)

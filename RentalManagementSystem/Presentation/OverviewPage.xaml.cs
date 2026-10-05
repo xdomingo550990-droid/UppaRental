@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace RentalManagementSystem.Presentation
@@ -7,6 +10,7 @@ namespace RentalManagementSystem.Presentation
     {
         private const int MaxPerSection = 4;   // cards per section when "All" is selected
         private string _filter = "All";
+        private string _query = "";            // text from the Dashboard's top search bar
 
         public OverviewPage()
         {
@@ -14,20 +18,43 @@ namespace RentalManagementSystem.Presentation
             LoadSections();
         }
 
-        private void Category_Checked(object sender, RoutedEventArgs e)
+        // Called by the Dashboard's top search bar
+        public void SetSearch(string text)
         {
-            if (sender is RadioButton rb) _filter = rb.Tag?.ToString() ?? "All";
+            _query = text?.Trim() ?? "";
 
-            // Fires once during InitializeComponent, before the list exists.
             if (icSections == null) return;
             LoadSections();
         }
 
-        // Drafts are not shown on the Overview.
+        private void Category_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is RadioButton rb) _filter = rb.Tag?.ToString() ?? "All";
+
+            // Fires once during InitializeComponent, before icSections exists.
+            if (icSections == null) return;
+            LoadSections();
+        }
+
         private void LoadSections()
         {
-            icSections.ItemsSource = PropertyStore.BuildSections(PropertyStore.All, _filter, MaxPerSection, includeDrafts: false);
+            IEnumerable<RentalProperty> pool = PropertyStore.All;
+
+            if (_query.Length > 0)
+            {
+                pool = pool.Where(p =>
+                    Has(p.Name, _query) || Has(p.Location, _query) || Has(p.Description, _query) ||
+                    Has(p.Status, _query) || Has(p.RoomType, _query));
+            }
+
+            // While searching, show every match instead of just the top few per category.
+            int perSection = _query.Length > 0 ? int.MaxValue : MaxPerSection;
+
+            icSections.ItemsSource = PropertyStore.BuildSections(pool, _filter, perSection, includeDrafts: false);
         }
+
+        private static bool Has(string text, string query) =>
+            !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
 
         // Placeholder: replace with your property details page or popup.
         private void ReadMore_Click(object sender, RoutedEventArgs e)

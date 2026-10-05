@@ -43,6 +43,9 @@ namespace RentalManagementSystem.Presentation
 
             txtPageTitle.Text = nav.Content?.ToString();
 
+            // The search bar is hidden on the Settings page
+            SearchBar.Visibility = nav.Name == nameof(btnSettings) ? Visibility.Collapsed : Visibility.Visible;
+
             MainContentFrame.Content = nav.Name switch
             {
                 nameof(btnOverview) => new OverviewPage(),
@@ -75,6 +78,11 @@ namespace RentalManagementSystem.Presentation
             var landing = new LandingPage();
             landing.Show();                    // open the landing page first...
             this.Close();                      // ...then close the dashboard
+        }
+
+        private void btnSettings_Checked(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

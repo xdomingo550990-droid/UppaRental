@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -32,6 +33,7 @@ namespace RentalManagementSystem.Presentation
             OverlayTransform.BeginAnimation(TranslateTransform.XProperty, null);
             OverlayTransform.X = login ? LeftX : RightX;
             SetVisible(LoginPanel, login);
+            SetVisible(ForgotPanel, false);
             SetVisible(HelloPanel, login);
             SetVisible(RegisterPanel, !login);
             SetVisible(WelcomeBackPanel, !login);
@@ -57,6 +59,7 @@ namespace RentalManagementSystem.Presentation
             OverlayTransform.BeginAnimation(TranslateTransform.XProperty, move);
 
             Fade(LoginPanel, toLogin);
+            Fade(ForgotPanel, false);
             Fade(HelloPanel, toLogin);
             Fade(RegisterPanel, !toLogin);
             Fade(WelcomeBackPanel, !toLogin);
@@ -107,6 +110,72 @@ namespace RentalManagementSystem.Presentation
 
             // TODO: validate the credentials via your Service/DAO; only raise on success
             LoginSucceeded?.Invoke(this, EventArgs.Empty);
+        }
+
+        // ---------- Forgot password ----------
+        private void ForgotPassword_Click(object sender, MouseButtonEventArgs e)
+        {
+            // Carry over whatever username was already typed on the login form
+            ForgotUsername.Text = LoginUsername.Text;
+            ForgotNewPassword.Clear();
+            ForgotConfirmPassword.Clear();
+            ForgotMessage.Visibility = Visibility.Collapsed;
+
+            Fade(LoginPanel, false);
+            Fade(ForgotPanel, true);
+        }
+
+        private void BackToLogin_Click(object sender, MouseButtonEventArgs e) => ShowLoginForm();
+
+        private void ShowLoginForm()
+        {
+            Fade(ForgotPanel, false);
+            Fade(LoginPanel, true);
+        }
+
+        private void ResetPassword_Click(object sender, RoutedEventArgs e)
+        {
+            string username = ForgotUsername.Text.Trim();
+            string newPassword = ForgotNewPassword.Password;
+            string confirm = ForgotConfirmPassword.Password;
+
+            if (username.Length == 0 || newPassword.Length == 0 || confirm.Length == 0)
+            {
+                ShowForgotMessage("Please fill in all fields.");
+                return;
+            }
+            if (newPassword.Length < 8)
+            {
+                ShowForgotMessage("The new password must be at least 8 characters.");
+                return;
+            }
+            if (newPassword != confirm)
+            {
+                ShowForgotMessage("The passwords do not match.");
+                return;
+            }
+
+            // TODO: check that the username exists and save the new password (hashed) via your Service/DAO, e.g.
+            // if (!userService.ResetPassword(username, newPassword))
+            // {
+            //     ShowForgotMessage("We couldn't find an account with that username.");
+            //     return;
+            // }
+
+            MessageBox.Show("Your password has been reset. You can now log in.", "Forgot Password");
+
+            ForgotNewPassword.Clear();
+            ForgotConfirmPassword.Clear();
+            LoginUsername.Text = username;
+            LoginPassword.Clear();
+            ShowLoginForm();
+        }
+
+        private void ShowForgotMessage(string message)
+        {
+            ForgotMessage.Text = message;
+            ForgotMessage.Foreground = new SolidColorBrush(Color.FromRgb(0xC8, 0x4B, 0x41));
+            ForgotMessage.Visibility = Visibility.Visible;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) =>

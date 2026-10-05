@@ -184,9 +184,8 @@
                                  Tag="&#xE9D2;" Content="Reports" Click="NavButton_Click"/>
 
                     <Border Style="{StaticResource NavDivider}"/>
-
                     <RadioButton x:Name="btnSettings" Style="{StaticResource NavItemStyle}"
-                                 Tag="&#xE713;" Content="Settings" Click="NavButton_Click"/>
+                                 Tag="&#xE13D;" Content="Profile" Click="NavButton_Click" Checked="btnSettings_Checked"/>
                     <Button x:Name="btnLogout" Style="{StaticResource LogoutStyle}"
                             Tag="&#xE7E8;" Content="Logout" Click="LogOutButton_Click"/>
                 </StackPanel>
@@ -227,8 +226,8 @@
                                Foreground="#1E3223" VerticalAlignment="Center"/>
 
                     <!-- Search Bar (next to the title) -->
-                    <Border Grid.Column="1" HorizontalAlignment="Center" Width="700" Height="38"
-                            Margin="24,0,0,0" Background="#E8EFE9" CornerRadius="19" Padding="14,0">
+                    <Border x:Name="SearchBar" Grid.Column="1" HorizontalAlignment="Left" Width="700" Height="38"
+                            Margin="257,0,0,0" Background="#E8EFE9" CornerRadius="19" Padding="14,0">
                         <Grid VerticalAlignment="Center">
                             <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
                                        Foreground="#607464" VerticalAlignment="Center" HorizontalAlignment="Left"/>

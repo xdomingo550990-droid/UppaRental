@@ -142,6 +142,21 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Clickable text link (Forgot Password?, Back to Login) -->
+        <Style x:Key="LinkText" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#27894C"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="TextDecorations" Value="Underline"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <!-- Card -->
@@ -213,8 +228,8 @@
                     <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
-                <TextBlock Text="Forgot Password?" FontFamily="{StaticResource AppFont}" FontSize="11"
-                               HorizontalAlignment="Center" Margin="0,0,0,12" Cursor="Hand"/>
+                <TextBlock Text="Forgot Password?" Style="{StaticResource LinkText}"
+                           Margin="0,0,0,12" MouseLeftButtonUp="ForgotPassword_Click"/>
 
                 <Button Content="Login" Style="{StaticResource PrimaryButton}" Click="Login_Click"/>
 
@@ -223,6 +238,45 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                    
                 </StackPanel>
+            </StackPanel>
+
+            <!-- ============ FORGOT PASSWORD FORM (right, replaces login) ============ -->
+            <StackPanel x:Name="ForgotPanel" Grid.Column="1" VerticalAlignment="Center"
+                            Margin="50,0" Opacity="0" IsHitTestVisible="False">
+                <TextBlock Text="Reset Password" FontFamily="{StaticResource AppFont}" FontSize="26"
+                               FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                <TextBlock Text="Enter your username and choose a new password."
+                               FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="#666666"
+                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16"/>
+
+                <Grid Margin="0,0,0,12">
+                    <TextBox x:Name="ForgotUsername" Style="{StaticResource FieldTextBox}"
+                                 Tag="{Binding ElementName=ForgotUsernameHint}" TextChanged="Field_Changed"/>
+                    <TextBlock x:Name="ForgotUsernameHint" Text="Username" Style="{StaticResource HintText}"/>
+                    <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,12">
+                    <PasswordBox x:Name="ForgotNewPassword" Style="{StaticResource FieldPasswordBox}"
+                                     Tag="{Binding ElementName=ForgotNewPasswordHint}" PasswordChanged="Field_Changed"/>
+                    <TextBlock x:Name="ForgotNewPasswordHint" Text="New password" Style="{StaticResource HintText}"/>
+                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,10">
+                    <PasswordBox x:Name="ForgotConfirmPassword" Style="{StaticResource FieldPasswordBox}"
+                                     Tag="{Binding ElementName=ForgotConfirmPasswordHint}" PasswordChanged="Field_Changed"/>
+                    <TextBlock x:Name="ForgotConfirmPasswordHint" Text="Confirm password" Style="{StaticResource HintText}"/>
+                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
+                </Grid>
+
+                <TextBlock x:Name="ForgotMessage" FontFamily="{StaticResource AppFont}" FontSize="11"
+                               FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center"
+                               Margin="0,0,0,10" Visibility="Collapsed"/>
+
+                <Button Content="Reset Password" Style="{StaticResource PrimaryButton}" Click="ResetPassword_Click"/>
+                <TextBlock Text="Back to Login" Style="{StaticResource LinkText}"
+                           Margin="0,14,0,0" MouseLeftButtonUp="BackToLogin_Click"/>
             </StackPanel>
 
             <!-- ============ BLUE SLIDING OVERLAY ============ -->

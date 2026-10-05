@@ -11,68 +11,360 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/PageStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- ============ Form panel styles ============ -->
+            <Style x:Key="PanelCaption" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="#D9B45A"/>
+                <Setter Property="FontSize" Value="10.5"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Margin" Value="1,0,0,10"/>
+            </Style>
+
+            <Style x:Key="FormLabel" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="#CFE0D3"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="11.5"/>
+                <Setter Property="Margin" Value="1,0,0,4"/>
+            </Style>
+
+            <!-- Slim off-white text input, 6px corners -->
+            <Style x:Key="FormInput" TargetType="TextBox">
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="Foreground" Value="#1C3527"/>
+                <Setter Property="Background" Value="#F4F6F4"/>
+                <Setter Property="Padding" Value="10,0"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="Transparent"
+                                    BorderThickness="1.5" CornerRadius="6">
+                                <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="bd" Property="BorderBrush" Value="#D9B45A"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Rounded wrapper for dropdowns and date pickers -->
+            <Style x:Key="FormBox" TargetType="Border">
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="Background" Value="#F4F6F4"/>
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="ClipToBounds" Value="True"/>
+            </Style>
+
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Padding" Value="10,6"/>
+                <Setter Property="Foreground" Value="#1C3527"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border x:Name="bd" CornerRadius="6" Padding="{TemplateBinding Padding}" Background="Transparent">
+                                <ContentPresenter/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#EEF2EE"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#DCEBDF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="FormCombo" TargetType="ComboBox">
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="Foreground" Value="#1C3527"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton Focusable="False" ClickMode="Press"
+                                              IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border Background="Transparent">
+                                                <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0"
+                                                      Data="M0,0 L4,4 L8,0" Stroke="#5B6B60" StrokeThickness="1.6"
+                                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                                <ContentPresenter IsHitTestVisible="False" Margin="10,0,30,0" VerticalAlignment="Center"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
+                                                  ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"/>
+                                <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                                       AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                    <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                            Background="White" BorderBrush="#D5DDD7" BorderThickness="1"
+                                            CornerRadius="8" Padding="4" Margin="0,6,0,16">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.15"/>
+                                        </Border.Effect>
+                                        <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                            <ItemsPresenter/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Date picker without the white patch -->
+            <Style TargetType="DatePickerTextBox">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DatePickerTextBox">
+                            <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" VerticalAlignment="Center"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="DatePicker">
+                <Setter Property="Height" Value="26"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="8,0,4,0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="#1C3527"/>
+            </Style>
+
+            <!-- Slim action buttons -->
+            <Style x:Key="FormButton" TargetType="Button">
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8" Padding="12,0">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style x:Key="FormButtonSave" TargetType="Button" BasedOn="{StaticResource FormButton}">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="White"/>
+                <Setter Property="Foreground" Value="#1C3527"/>
+            </Style>
+            <Style x:Key="FormButtonClear" TargetType="Button" BasedOn="{StaticResource FormButton}">
+                <Setter Property="Background" Value="#26FFFFFF"/>
+                <Setter Property="BorderBrush" Value="#4DFFFFFF"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+            <Style x:Key="FormButtonDelete" TargetType="Button" BasedOn="{StaticResource FormButton}">
+                <Setter Property="Background" Value="#B94A48"/>
+                <Setter Property="BorderBrush" Value="#B94A48"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- 1. Header -->
-            <RowDefinition Height="Auto"/> <!-- 2. Summary cards -->
+            <RowDefinition Height="Auto"/> <!-- 2. Renter form panel -->
             <RowDefinition Height="*"/>    <!-- 3. Table card (Filters + DataGrid) -->
         </Grid.RowDefinitions>
 
         <!-- 1. Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Manage tenant profiles, lease periods, and rent status." 
-                           Style="{StaticResource PageSubtitle}"
-                           FontWeight="SemiBold"
-                           Foreground="#1E3223"/>
-            </StackPanel>
-            
-            <Button Grid.Column="1" Content="+ Add Renter" Style="{StaticResource PrimaryButton}"
-                    VerticalAlignment="Center" Click="AddRenter_Click"/>
-        </Grid>
+        <TextBlock Grid.Row="0" Text="Manage tenant profiles, lease periods, and rent status."
+                   Style="{StaticResource PageSubtitle}" FontWeight="SemiBold" Foreground="#1E3223"
+                   Margin="0,0,0,16"/>
 
-        <!-- 2. Summary cards -->
-        <Grid Grid.Row="1" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- 2. Inline renter form panel + divider -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,16">
+            <Border CornerRadius="12" Padding="26,18,26,8">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#1C3527" Offset="0"/>
+                        <GradientStop Color="#24432F" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                    <DropShadowEffect Color="#1C3527" Direction="270" ShadowDepth="5" BlurRadius="22" Opacity="0.22"/>
+                </Border.Effect>
 
-            <Border Grid.Column="0" Style="{StaticResource Card}" Background="#1E3223" Padding="20,16">
                 <StackPanel>
-                    <TextBlock Text="Total renters" Style="{StaticResource StatLabel}" Foreground="#C9D8CC"/>
-                    <TextBlock x:Name="txtTotal" Text="0" Style="{StaticResource StatValue}" Foreground="White"/>
-                    <TextBlock Text="All tenants on record" Style="{StaticResource StatNote}" Foreground="#C9D8CC"/>
+                    <!-- Panel title -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="4" Height="30" CornerRadius="2" Background="#D9B45A"
+                                VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Renter Details" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                            <TextBlock Text="Add a new renter, or click a row in the table to edit it."
+                                       FontSize="11.5" Foreground="#A9C2B0" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="1.15*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="176"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- LEFT: tenant profile -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="TENANT PROFILE" Style="{StaticResource PanelCaption}"/>
+
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Renter Name" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="NameBox" Style="{StaticResource FormInput}"/>
+                            </StackPanel>
+
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Contact No" Style="{StaticResource FormLabel}"/>
+                                    <TextBox x:Name="ContactBox" Style="{StaticResource FormInput}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Email Address" Style="{StaticResource FormLabel}"/>
+                                    <TextBox x:Name="EmailBox" Style="{StaticResource FormInput}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Home Address" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="AddressBox" Style="{StaticResource FormInput}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- divider -->
+                        <Border Grid.Column="1" Width="1" Background="#26FFFFFF" HorizontalAlignment="Center"/>
+
+                        <!-- MIDDLE: lease and unit -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="LEASE &amp; UNIT" Style="{StaticResource PanelCaption}"/>
+
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Assigned Unit" Style="{StaticResource FormLabel}"/>
+                                    <Border Style="{StaticResource FormBox}">
+                                        <ComboBox x:Name="UnitCombo" Style="{StaticResource FormCombo}"/>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Lease Status" Style="{StaticResource FormLabel}"/>
+                                    <Border Style="{StaticResource FormBox}">
+                                        <ComboBox x:Name="StatusCombo" Style="{StaticResource FormCombo}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Lease Term" Style="{StaticResource FormLabel}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Grid.Column="0" Style="{StaticResource FormBox}">
+                                        <DatePicker x:Name="StartPicker"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="to" Foreground="#CFE0D3" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" Margin="12,0"/>
+                                    <Border Grid.Column="2" Style="{StaticResource FormBox}">
+                                        <DatePicker x:Name="EndPicker"/>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="Monthly Rent (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="RentBox" Style="{StaticResource FormInput}"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- divider -->
+                        <Border Grid.Column="3" Width="1" Background="#26FFFFFF" HorizontalAlignment="Center"/>
+
+                        <!-- RIGHT: actions -->
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="ACTIONS" Style="{StaticResource PanelCaption}"/>
+
+                            <Button x:Name="SaveButton" Style="{StaticResource FormButtonSave}" Click="Save_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               Foreground="#1F9D55" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="SaveText" Text="Save Renter" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource FormButtonClear}" Click="Clear_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE75C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Clear Fields" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource FormButtonDelete}" Click="Delete_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Delete Renter" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <TextBlock Text="Delete removes the renter selected in the table."
+                                       FontSize="11" Foreground="#A9C2B0" TextWrapping="Wrap" Margin="2,2,0,0"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock x:Name="FormMessage" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
+                               Margin="2,4,0,10" Visibility="Collapsed"/>
                 </StackPanel>
             </Border>
 
-            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16">
-                <StackPanel>
-                    <TextBlock Text="Active leases" Style="{StaticResource StatLabel}"/>
-                    <TextBlock x:Name="txtActive" Text="0" Style="{StaticResource StatValue}"/>
-                    <TextBlock Text="Currently renting" Style="{StaticResource StatNote}"/>
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="4" Style="{StaticResource Card}" Padding="20,16">
-                <StackPanel>
-                    <TextBlock Text="Pending move-ins" Style="{StaticResource StatLabel}"/>
-                    <TextBlock x:Name="txtPending" Text="0" Style="{StaticResource StatValue}"/>
-                    <TextBlock Text="Waiting to start a lease" Style="{StaticResource StatNote}"/>
-                </StackPanel>
-            </Border>
-        </Grid>
+            <!-- Divider -->
+            <Border Height="1" Background="#C5D4C9" Margin="0,16,0,0"/>
+        </StackPanel>
 
         <!-- 3. Main Renters Card (Filters + DataGrid) -->
         <Border Grid.Row="2" Style="{StaticResource Card}">
@@ -95,7 +387,8 @@
                 </StackPanel>
 
                 <!-- Renters Table -->
-                <DataGrid Grid.Row="1" x:Name="dgRenters" Style="{StaticResource AppDataGrid}">
+                <DataGrid Grid.Row="1" x:Name="dgRenters" Style="{StaticResource AppDataGrid}"
+                          SelectionChanged="Renters_SelectionChanged">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="RENTER" Width="230">
                             <DataGridTemplateColumn.CellTemplate>

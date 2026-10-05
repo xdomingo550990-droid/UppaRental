@@ -21,58 +21,133 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- 1. Header -->
-        <Grid Grid.Row="0" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Track invoices, collected rent, and outstanding balances." 
-                           Style="{StaticResource PageSubtitle}"
-                           FontWeight="SemiBold"
-                           Foreground="#1E3223"/>
-            </StackPanel>
-            
-            <Button Grid.Column="1" Content="+ Create Invoice" Style="{StaticResource PrimaryButton}"
-                    VerticalAlignment="Center" Click="CreateInvoice_Click"/>
+        <!-- 1. Header Subtitle -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Track invoices, collected rent, and outstanding balances." 
+                       Style="{StaticResource PageSubtitle}"
+                       FontWeight="SemiBold"
+                       Foreground="#1E3223"/>
         </Grid>
 
-        <!-- 2. Summary cards -->
-        <Grid Grid.Row="1" Margin="0,0,0,20">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="16"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <!-- 2. Inline Invoice Management Header Banner -->
+        <Border Grid.Row="1" Background="#1E3223" CornerRadius="12" Padding="20,16" Margin="0,0,0,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <Border Grid.Column="0" Style="{StaticResource Card}" Background="#1E3223" Padding="20,16">
-                <StackPanel>
-                    <TextBlock Text="Total collected" Style="{StaticResource StatLabel}" Foreground="#C9D8CC"/>
-                    <TextBlock x:Name="txtCollected" Text="₱0.00" Style="{StaticResource StatValue}" Foreground="White"/>
-                    <TextBlock x:Name="txtCollectedNote" Text="" Style="{StaticResource StatNote}" Foreground="#C9D8CC"/>
+                <!-- Panel Title & Instructions -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                    <StackPanel Orientation="Horizontal">
+                        <Rectangle Width="4" Height="18" Fill="#C9D8CC" Margin="0,0,8,0"/>
+                        <TextBlock Text="Invoice Details" FontSize="16" FontWeight="Bold" Foreground="White"/>
+                    </StackPanel>
+                    <TextBlock Text="Generate a new invoice or click a row in the table below to edit or update it." 
+                               FontSize="12" Foreground="#C9D8CC" Margin="12,2,0,0"/>
                 </StackPanel>
-            </Border>
 
-            <Border Grid.Column="2" Style="{StaticResource Card}" Padding="20,16">
-                <StackPanel>
-                    <TextBlock Text="Pending" Style="{StaticResource StatLabel}"/>
-                    <TextBlock x:Name="txtPending" Text="₱0.00" Style="{StaticResource StatValue}" Foreground="#8C6B00"/>
-                    <TextBlock x:Name="txtPendingNote" Text="" Style="{StaticResource StatNote}"/>
-                </StackPanel>
-            </Border>
+                <!-- Form Controls Grid -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2.2*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="2.2*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="1.5*"/>
+                    </Grid.ColumnDefinitions>
 
-            <Border Grid.Column="4" Style="{StaticResource Card}" Padding="20,16">
-                <StackPanel>
-                    <TextBlock Text="Overdue" Style="{StaticResource StatLabel}"/>
-                    <TextBlock x:Name="txtOverdue" Text="₱0.00" Style="{StaticResource StatValue}" Foreground="#A81C0C"/>
-                    <TextBlock x:Name="txtOverdueNote" Text="" Style="{StaticResource StatNote}"/>
-                </StackPanel>
-            </Border>
-        </Grid>
+                    <!-- Column 1: Tenant & Billing Info -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="TENANT &amp; BILLING INFO" FontSize="11" FontWeight="Bold" Foreground="#C9D8CC" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="Renter Name" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CmbRenter" Height="34" Margin="0,0,0,10" 
+                                  DisplayMemberPath="Name" SelectionChanged="CmbRenter_SelectionChanged"/>
+
+                        <TextBlock Text="Category" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CmbCategory" Height="34" Margin="0,0,0,10">
+                            <ComboBoxItem Content="Monthly Rent" IsSelected="True"/>
+                            <ComboBoxItem Content="Water Bill"/>
+                            <ComboBoxItem Content="Electric Bill"/>
+                            <ComboBoxItem Content="Security Deposit"/>
+                            <ComboBoxItem Content="Penalty / Late Fee"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Assigned Unit" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtUnit" Height="34" IsReadOnly="True" Background="#F4F6F4" Padding="8,6"/>
+                    </StackPanel>
+
+                    <!-- Column 2: Amounts & Dates -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="AMOUNT &amp; DATES" FontSize="11" FontWeight="Bold" Foreground="#C9D8CC" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="Amount (₱)" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtAmount" Height="34" Margin="0,0,0,10" Padding="8,6"/>
+
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Billing Period" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TxtPeriod" Height="34" Padding="8,6"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Due Date" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                                <DatePicker x:Name="DpDueDate" Height="34"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Payment Status" FontSize="12" Foreground="White" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CmbStatus" Height="34">
+                            <ComboBoxItem Content="Pending" IsSelected="True"/>
+                            <ComboBoxItem Content="Paid"/>
+                            <ComboBoxItem Content="Overdue"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Column 3: Action Buttons -->
+                    <StackPanel Grid.Column="4" VerticalAlignment="Top">
+                        <TextBlock Text="ACTIONS" FontSize="11" FontWeight="Bold" Foreground="#C9D8CC" Margin="0,0,0,8"/>
+
+                        <Button x:Name="BtnSave" Content="✓  Save Invoice" Height="36" Margin="0,0,0,8" 
+                                Background="White" Foreground="#1E3223" FontWeight="Bold" Cursor="Hand" Click="SaveInvoice_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
+                        <Button Content="🧹  Clear Fields" Height="36" Margin="0,0,0,8" 
+                                Background="#344E3B" Foreground="White" FontWeight="SemiBold" Cursor="Hand" Click="ClearFields_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
+                        <Button Content="🗑  Delete Invoice" Height="36" Margin="0,0,0,8" 
+                                Background="#C84B31" Foreground="White" FontWeight="Bold" Cursor="Hand" Click="DeleteInvoice_Click">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="8"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+
+                        <TextBlock Text="Delete removes the invoice selected in the table." 
+                                   FontSize="11" Foreground="#C9D8CC" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Border>
 
         <!-- 3. Main Invoices Card (Filters + DataGrid) -->
         <Border Grid.Row="2" Style="{StaticResource Card}">
@@ -84,18 +159,19 @@
 
                 <!-- Filter Pills -->
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
-                    <RadioButton x:Name="rbAll" Content="All" Tag="All" IsChecked="True"
+                    <RadioButton x:Name="RbAll" Content="All" Tag="All" IsChecked="True"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
-                    <RadioButton x:Name="rbPaid" Content="Paid" Tag="Paid"
+                    <RadioButton x:Name="RbPaid" Content="Paid" Tag="Paid"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
-                    <RadioButton x:Name="rbPendingFilter" Content="Pending" Tag="Pending"
+                    <RadioButton x:Name="RbPendingFilter" Content="Pending" Tag="Pending"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
-                    <RadioButton x:Name="rbOverdue" Content="Overdue" Tag="Overdue"
+                    <RadioButton x:Name="RbOverdue" Content="Overdue" Tag="Overdue"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                 </StackPanel>
 
                 <!-- Invoices Table -->
-                <DataGrid Grid.Row="1" x:Name="dgInvoices" Style="{StaticResource AppDataGrid}">
+                <DataGrid Grid.Row="1" x:Name="DgInvoices" Style="{StaticResource AppDataGrid}" 
+                          SelectionChanged="DgInvoices_SelectionChanged">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="120">
                             <DataGridTextColumn.ElementStyle>

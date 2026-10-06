@@ -11,6 +11,34 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Resources/PageStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Underlined tab: Invoices | Payment History -->
+            <Style x:Key="BillingTab" TargetType="RadioButton">
+                <Setter Property="Foreground" Value="#7A8C7E"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,26,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="line" BorderThickness="0,0,0,3" BorderBrush="Transparent" Padding="2,0,2,8">
+                                <ContentPresenter RecognizesAccessKey="False"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Foreground" Value="#1E3223"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Foreground" Value="#1E3223"/>
+                                    <Setter TargetName="line" Property="BorderBrush" Value="#C07156"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -74,16 +102,31 @@
             </Border>
         </Grid>
 
-        <!-- 3. My Invoices Card (Filters + DataGrid) -->
+        <!-- 3. Main card: tabs (Invoices | Payment History) + tables -->
         <Border Grid.Row="2" Style="{StaticResource Card}">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Filter Pills -->
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                <!-- Tabs -->
+                <Grid Grid.Row="0" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <RadioButton x:Name="tabInvoices" Content="Invoices" GroupName="BillingTabs" IsChecked="True"
+                                     Style="{StaticResource BillingTab}" Checked="Tab_Checked"/>
+                        <RadioButton x:Name="tabHistory" Content="Payment History" GroupName="BillingTabs"
+                                     Style="{StaticResource BillingTab}" Checked="Tab_Checked"/>
+                    </StackPanel>
+
+                    <!-- Only visible on the Payment History tab -->
+                    <TextBlock x:Name="txtHistoryTotal" HorizontalAlignment="Right" VerticalAlignment="Center"
+                               FontSize="13" FontWeight="SemiBold" Foreground="#1E3223" Visibility="Collapsed"/>
+                </Grid>
+
+                <!-- Filter Pills (Invoices tab only) -->
+                <StackPanel x:Name="FilterBar" Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
                     <RadioButton x:Name="rbAll" Content="All" Tag="All" IsChecked="True"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="rbPaid" Content="Paid" Tag="Paid"
@@ -95,7 +138,7 @@
                 </StackPanel>
 
                 <!-- Invoices Table -->
-                <DataGrid Grid.Row="1" x:Name="dgInvoices" Style="{StaticResource AppDataGrid}">
+                <DataGrid Grid.Row="2" x:Name="dgInvoices" Style="{StaticResource AppDataGrid}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="120">
                             <DataGridTextColumn.ElementStyle>
@@ -141,6 +184,40 @@
                                             </Button.Style>
                                         </Button>
                                     </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Payment History Table (Payment History tab) -->
+                <DataGrid Grid.Row="1" Grid.RowSpan="2" x:Name="dgHistory" Style="{StaticResource AppDataGrid}"
+                          Visibility="Collapsed">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="RECEIPT #" Binding="{Binding ReceiptNo}" Width="120">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#27894C"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="110"/>
+                        <DataGridTextColumn Header="PERIOD" Binding="{Binding Period}" Width="110"/>
+                        <DataGridTextColumn Header="DATE PAID" Binding="{Binding DatePaidText}" Width="130"/>
+                        <DataGridTextColumn Header="METHOD" Binding="{Binding Method}" Width="150"/>
+                        <DataGridTextColumn Header="REFERENCE" Binding="{Binding Reference}" Width="*"/>
+                        <DataGridTextColumn Header="AMOUNT" Binding="{Binding AmountText}" Width="130">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="" Width="90">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Receipt" Style="{StaticResource LinkButton}" Click="Receipt_Click"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

@@ -1,6 +1,7 @@
 ﻿<Window x:Class="RentalManagementSystem.Presentation.AddPropertyWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:RentalManagementSystem.Presentation"
         Title="Add New Property / Unit"
         Width="780" Height="760"
         WindowStartupLocation="CenterOwner"
@@ -236,15 +237,10 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <!-- Header -->
                 <RowDefinition Height="Auto"/>
-                <!-- Step indicator -->
                 <RowDefinition Height="*"/>
-                <!-- Step content -->
                 <RowDefinition Height="Auto"/>
-                <!-- Error message -->
                 <RowDefinition Height="Auto"/>
-                <!-- Footer buttons -->
             </Grid.RowDefinitions>
 
             <!-- 1. HEADER -->
@@ -319,6 +315,7 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Grid.Column="0">
@@ -372,7 +369,17 @@
                             </Grid>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,18,0,0">
+                        <!-- Maximum capacity -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,18,0,0">
+                            <TextBlock Text="Maximum Capacity (persons)" Style="{StaticResource FieldLabel}"/>
+                            <Border Style="{StaticResource InputBorder}">
+                                <TextBox x:Name="txtCapacity" Style="{StaticResource PlainTextBox}" Text="2"/>
+                            </Border>
+                            <TextBlock Text="Most people allowed to stay in this unit" FontSize="11"
+                                       Foreground="#8A9A8D" Margin="2,4,0,0"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Margin="0,18,0,0">
                             <TextBlock Text="Initial Status" Style="{StaticResource FieldLabel}"/>
                             <StackPanel Orientation="Horizontal">
                                 <RadioButton x:Name="rbAvailable" Content="Available" GroupName="Status" IsChecked="True"
@@ -431,9 +438,10 @@
                             <TextBlock Text="Utility Billing Setup" Style="{StaticResource FieldLabel}"/>
                             <Border Background="#F7F9F7" BorderBrush="#E0E6E1" BorderThickness="1" CornerRadius="12" Padding="18,16,18,6">
                                 <StackPanel>
-                                    <CheckBox x:Name="chkWater" Content="Water Included"/>
-                                    <CheckBox x:Name="chkElectricity" Content="Electricity Metered Separately"/>
-                                    <CheckBox x:Name="chkWifi" Content="Wi-Fi Included"/>
+                                    <local:UtilityOptionControl x:Name="ucWater" Header="Water Included"/>
+                                    <local:UtilityOptionControl x:Name="ucElectricity" Header="Electricity Included"
+                                                                AllowSubMeter="True"/>
+                                    <local:UtilityOptionControl x:Name="ucWifi" Header="Wi-Fi Included"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>

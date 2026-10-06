@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,10 +16,15 @@ namespace RentalManagementSystem.Presentation
         public string RoomType { get; set; } = "";
         public decimal MonthlyRent { get; set; }
         public decimal SecurityDeposit { get; set; }
+        public int SizeSqFt { get; set; }
+        public int MaxCapacity { get; set; }
         public string Status { get; set; } = "";
         public bool IsDraft { get; set; }
+
+        public UtilitySettings Utilities { get; set; } = new UtilitySettings();
+
         public bool WaterIncluded { get; set; }
-        public bool ElectricityMetered { get; set; }
+        public bool ElectricityMetered { get; set; }   // true when electricity is NOT included
         public bool WifiIncluded { get; set; }
         public List<string> Amenities { get; set; } = new();
         public List<string> PhotoPaths { get; set; } = new();
@@ -61,6 +67,11 @@ namespace RentalManagementSystem.Presentation
                     ShowError("Please enter a property or unit name.");
                     return;
                 }
+                if (!int.TryParse(txtCapacity.Text.Trim(), out int capacity) || capacity < 1)
+                {
+                    ShowError("Maximum capacity must be a whole number of at least 1.");
+                    return;
+                }
                 _currentStep = 2;
                 UpdateStepUI();
             }
@@ -69,6 +80,13 @@ namespace RentalManagementSystem.Presentation
                 if (string.IsNullOrWhiteSpace(txtRent.Text) || !decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out _))
                 {
                     ShowError("Please enter a valid monthly rent amount.");
+                    return;
+                }
+                if (!ucWater.TryValidate("water", out string utilError) ||
+                    !ucElectricity.TryValidate("electricity", out utilError) ||
+                    !ucWifi.TryValidate("Wi-Fi", out utilError))
+                {
+                    ShowError(utilError);
                     return;
                 }
                 _currentStep = 3;
@@ -110,6 +128,20 @@ namespace RentalManagementSystem.Presentation
             decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out decimal rent);
             decimal.TryParse(txtDeposit.Text.Replace(",", "").Trim(), out decimal deposit);
 
+            int.TryParse(txtCapacity.Text.Trim(), out int capacity);   // 0 = not set (drafts only)
+
+            // Size is stored in sq ft; convert if entered in sqm.
+            decimal.TryParse(txtSize.Text.Replace(",", "").Trim(), NumberStyles.Number,
+                CultureInfo.InvariantCulture, out decimal size);
+            if (rbSqm.IsChecked == true) size *= 10.7639m;
+
+            var utilities = new UtilitySettings
+            {
+                Water = ucWater.Option,
+                Electricity = ucElectricity.Option,
+                Wifi = ucWifi.Option
+            };
+
             string status = "Available";
             if (rbReserved.IsChecked == true) status = "Reserved";
             else if (rbOccupied.IsChecked == true) status = "Occupied";
@@ -128,11 +160,14 @@ namespace RentalManagementSystem.Presentation
                 RoomType = (cmbRoomType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
                 MonthlyRent = rent,
                 SecurityDeposit = deposit,
+                SizeSqFt = (int)Math.Round(size),
+                MaxCapacity = capacity,
                 Status = status,
                 IsDraft = isDraft,
-                WaterIncluded = chkWater.IsChecked == true,
-                ElectricityMetered = chkElectricity.IsChecked == true,
-                WifiIncluded = chkWifi.IsChecked == true,
+                Utilities = utilities,
+                WaterIncluded = utilities.Water.Included,
+                ElectricityMetered = !utilities.Electricity.Included,
+                WifiIncluded = utilities.Wifi.Included,
                 Amenities = amenities,
                 PhotoPaths = new List<string>(_uploadedPhotoPaths),
                 Notes = txtNotes.Text.Trim()

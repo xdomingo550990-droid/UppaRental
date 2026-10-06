@@ -9,7 +9,7 @@ using System.Windows.Media;
 
 namespace RentalManagementSystem.Presentation;
 
-public partial class ReportsPage : UserControl
+public partial class OverviewPage : UserControl
 {
     private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
 
@@ -47,7 +47,9 @@ public partial class ReportsPage : UserControl
 
     private static readonly string[] ReportNames = { "Rental Report", "Payment Report", "Occupancy / Unit Status" };
 
-    public ReportsPage()
+    private string _query = "";   // text from the Dashboard's top search bar
+
+    public OverviewPage()
     {
         InitializeComponent();
         StartPicker.SelectedDate = DateTime.Today.AddDays(-45);
@@ -56,6 +58,20 @@ public partial class ReportsPage : UserControl
     }
 
     private void GenerateButton_Click(object sender, RoutedEventArgs e) => Generate();
+
+    // Called by the Dashboard's top search bar: filters the rows of the table below
+    public void SetSearch(string text)
+    {
+        _query = text?.Trim() ?? "";
+
+        if (ReportsGrid == null) return;   // page not built yet
+        Generate();
+    }
+
+    private bool MatchesQuery(GridRow r) =>
+        _query.Length == 0
+        || new[] { r.C1, r.C2, r.C3, r.C4, r.C5, r.Status }
+            .Any(s => !string.IsNullOrEmpty(s) && s.Contains(_query, StringComparison.OrdinalIgnoreCase));
 
     private void Generate()
     {
@@ -98,6 +114,8 @@ public partial class ReportsPage : UserControl
                 }).ToArray();
                 break;
         }
+
+        rows = rows.Where(MatchesQuery).ToArray();
 
         SetColumns(headers);
         ReportsGrid.ItemsSource = rows;

@@ -9,6 +9,23 @@ using System.Windows.Data;
 
 namespace RentalManagementSystem.Presentation
 {
+    /// <summary>One entry in the tenant's payment history (a receipt).</summary>
+    public class TenantPayment
+    {
+        private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
+
+        public string ReceiptNo { get; set; } = "";
+        public string InvoiceNo { get; set; } = "";
+        public string Period { get; set; } = "";
+        public DateTime DatePaid { get; set; }
+        public string Method { get; set; } = "";
+        public string Reference { get; set; } = "";
+        public decimal Amount { get; set; }
+
+        public string DatePaidText => DatePaid.ToString("MMM dd, yyyy", Us);
+        public string AmountText => "₱" + Amount.ToString("N2", Us);
+    }
+
     // Uses the InvoiceRow class already defined in BillingPage.xaml.cs (same namespace).
     public partial class TenantBillingPage : UserControl
     {
@@ -23,7 +40,18 @@ namespace RentalManagementSystem.Presentation
             new InvoiceRow { InvoiceNo = "INV-1985", Renter = TenantName, Unit = "Unit 101", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 12500, Status = "Paid" },
         };
 
+        // Payment history, newest first (replace with a database/DAO query for the logged-in tenant).
+        private readonly ObservableCollection<TenantPayment> _payments = new ObservableCollection<TenantPayment>
+        {
+            new TenantPayment { ReceiptNo = "RCT-3001", InvoiceNo = "INV-2001", Period = "Oct 2026", DatePaid = new DateTime(2026, 10, 3), Method = "GCash",         Reference = "GC-88421390", Amount = 12500 },
+            new TenantPayment { ReceiptNo = "RCT-2951", InvoiceNo = "INV-1993", Period = "Sep 2026", DatePaid = new DateTime(2026, 9, 4),  Method = "Bank Transfer", Reference = "BT-55120934", Amount = 12500 },
+            new TenantPayment { ReceiptNo = "RCT-2890", InvoiceNo = "INV-1985", Period = "Aug 2026", DatePaid = new DateTime(2026, 8, 5),  Method = "Cash",          Reference = "—",           Amount = 12500 },
+        };
+
+        private int _nextReceipt = 3002;
+
         private ICollectionView _view = null!;
+        private ICollectionView _historyView = null!;
         private string _statusFilter = "All";
         private string _globalSearchQuery = "";
 
@@ -35,6 +63,10 @@ namespace RentalManagementSystem.Presentation
             _view.Filter = Matches;
             dgInvoices.ItemsSource = _view;
 
+            _historyView = CollectionViewSource.GetDefaultView(_payments);
+            _historyView.Filter = MatchesPayment;
+            dgHistory.ItemsSource = _historyView;
+
             UpdateSummary();
         }
 
@@ -44,6 +76,22 @@ namespace RentalManagementSystem.Presentation
         {
             _globalSearchQuery = query?.Trim() ?? "";
             _view?.Refresh();
+            _historyView?.Refresh();
+        }
+
+        // ---------- Tabs: Invoices | Payment History ----------
+
+        private void Tab_Checked(object sender, RoutedEventArgs e)
+        {
+            // Fires once during InitializeComponent, before the later elements exist.
+            if (FilterBar == null || dgInvoices == null || dgHistory == null || txtHistoryTotal == null) return;
+
+            bool showHistory = tabHistory.IsChecked == true;
+
+            FilterBar.Visibility = showHistory ? Visibility.Collapsed : Visibility.Visible;
+            dgInvoices.Visibility = showHistory ? Visibility.Collapsed : Visibility.Visible;
+            dgHistory.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
+            txtHistoryTotal.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // ---------- Filtering ----------
@@ -59,6 +107,19 @@ namespace RentalManagementSystem.Presentation
             return inv.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
                 || inv.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
                 || inv.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool MatchesPayment(object item)
+        {
+            var p = (TenantPayment)item;
+
+            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
+
+            return p.ReceiptNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || p.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || p.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || p.Method.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || p.Reference.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
@@ -89,6 +150,10 @@ namespace RentalManagementSystem.Presentation
             rbPaid.Content = $"Paid ({paid.Count})";
             rbPendingFilter.Content = $"Pending ({pending.Count})";
             rbOverdue.Content = $"Overdue ({overdue.Count})";
+
+            tabInvoices.Content = $"Invoices ({_invoices.Count})";
+            tabHistory.Content = $"Payment History ({_payments.Count})";
+            txtHistoryTotal.Text = $"{_payments.Count} payment(s) · Total paid {Peso(_payments.Sum(p => p.Amount))}";
         }
 
         // ---------- Buttons ----------
@@ -126,18 +191,42 @@ namespace RentalManagementSystem.Presentation
             if (result != MessageBoxResult.Yes) return;
 
             // TODO: process the payment through your payment gateway / DAO here,
-            // and only mark the invoice as paid once it succeeds.
+            // and only mark the invoice as paid once it succeeds. Use the gateway's
+            // real method and reference number below.
             inv.Status = "Paid";
+
+            var payment = new TenantPayment
+            {
+                ReceiptNo = "RCT-" + _nextReceipt++,
+                InvoiceNo = inv.InvoiceNo,
+                Period = inv.Period,
+                DatePaid = DateTime.Today,
+                Method = "Online payment",
+                Reference = "REF-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
+                Amount = inv.Amount
+            };
+            _payments.Insert(0, payment);   // newest first
+
             _view.Refresh();
+            _historyView.Refresh();
             UpdateSummary();
 
-            MessageBox.Show("Payment recorded. Thank you!", "Billing and Payments");
+            MessageBox.Show($"Payment recorded. Your receipt is {payment.ReceiptNo}.", "Billing and Payments");
         }
 
         private void View_Click(object sender, RoutedEventArgs e)
         {
             if (((FrameworkElement)sender).DataContext is InvoiceRow inv)
                 MessageBox.Show($"{inv.InvoiceNo}\n{inv.Unit}\n{inv.Period}: {inv.AmountText}\nDue: {inv.DueDate}\nStatus: {inv.Status}", "Invoice");
+        }
+
+        private void Receipt_Click(object sender, RoutedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is TenantPayment p)
+                MessageBox.Show(
+                    $"Receipt {p.ReceiptNo}\n\nInvoice: {p.InvoiceNo} ({p.Period})\nPaid on: {p.DatePaidText}\n" +
+                    $"Method: {p.Method}\nReference: {p.Reference}\nAmount: {p.AmountText}\n\nPaid by: {TenantName}",
+                    "Payment receipt");
         }
     }
 }

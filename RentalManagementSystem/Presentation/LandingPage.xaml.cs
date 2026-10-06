@@ -12,9 +12,7 @@ using System.Windows.Shapes;
 
 namespace RentalManagementSystem.Presentation
 {
-    /// <summary>
-    /// Interaction logic for LandingPage.xaml
-    /// </summary>
+  
     public partial class LandingPage : Window
 
     {

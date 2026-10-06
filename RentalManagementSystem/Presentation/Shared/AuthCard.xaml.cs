@@ -1,7 +1,8 @@
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
@@ -33,7 +34,6 @@ namespace RentalManagementSystem.Presentation
             OverlayTransform.BeginAnimation(TranslateTransform.XProperty, null);
             OverlayTransform.X = login ? LeftX : RightX;
             SetVisible(LoginPanel, login);
-            SetVisible(ForgotPanel, false);
             SetVisible(HelloPanel, login);
             SetVisible(RegisterPanel, !login);
             SetVisible(WelcomeBackPanel, !login);
@@ -59,7 +59,6 @@ namespace RentalManagementSystem.Presentation
             OverlayTransform.BeginAnimation(TranslateTransform.XProperty, move);
 
             Fade(LoginPanel, toLogin);
-            Fade(ForgotPanel, false);
             Fade(HelloPanel, toLogin);
             Fade(RegisterPanel, !toLogin);
             Fade(WelcomeBackPanel, !toLogin);
@@ -83,99 +82,96 @@ namespace RentalManagementSystem.Presentation
                 string value = sender is PasswordBox pb ? pb.Password : ((TextBox)sender).Text;
                 hint.Visibility = string.IsNullOrEmpty(value) ? Visibility.Visible : Visibility.Collapsed;
             }
+
+            // Live "passwords do not match" warning while typing on the register form
+            if (sender == RegPassword || sender == RegPasswordPlain ||
+                sender == RegConfirmPassword || sender == RegConfirmPasswordPlain)
+            {
+                CheckPasswordMatch();
+            }
+        }
+
+        // ---------- Show / hide password ----------
+        // Each password field is a Grid holding a PasswordBox, a plain TextBox (hidden) and the eye ToggleButton.
+        private void TogglePassword_Click(object sender, RoutedEventArgs e)
+        {
+            var toggle = (ToggleButton)sender;
+            var grid = (Grid)toggle.Parent;
+            var pb = grid.Children.OfType<PasswordBox>().First();
+            var tb = grid.Children.OfType<TextBox>().First();
+
+            if (toggle.IsChecked == true)       // show the password
+            {
+                tb.Text = pb.Password;
+                pb.Visibility = Visibility.Collapsed;
+                tb.Visibility = Visibility.Visible;
+                tb.Focus();
+                tb.CaretIndex = tb.Text.Length;
+            }
+            else                                // hide the password
+            {
+                pb.Password = tb.Text;
+                tb.Visibility = Visibility.Collapsed;
+                pb.Visibility = Visibility.Visible;
+                pb.Focus();
+            }
+        }
+
+        /// <summary>Reads the password from whichever control (masked or plain) is currently showing.</summary>
+        private static string GetPassword(PasswordBox pb, TextBox tb) =>
+            tb.Visibility == Visibility.Visible ? tb.Text : pb.Password;
+
+        private bool CheckPasswordMatch()
+        {
+            if (RegMessage == null) return true;
+
+            string password = GetPassword(RegPassword, RegPasswordPlain);
+            string confirm = GetPassword(RegConfirmPassword, RegConfirmPasswordPlain);
+
+            bool mismatch = confirm.Length > 0 && password != confirm;
+            RegMessage.Text = "Passwords do not match.";
+            RegMessage.Visibility = mismatch ? Visibility.Visible : Visibility.Collapsed;
+            return !mismatch;
         }
 
         // ---------- Actions (hook these up to your DAO / Service layer) ----------
         private void Register_Click(object sender, RoutedEventArgs e)
         {
+            string password = GetPassword(RegPassword, RegPasswordPlain);
+            string confirm = GetPassword(RegConfirmPassword, RegConfirmPasswordPlain);
+
             if (RegUsername.Text.Trim().Length == 0 || RegEmail.Text.Trim().Length == 0 ||
-                RegPassword.Password.Length == 0)
+                password.Length == 0 || confirm.Length == 0)
             {
                 MessageBox.Show("Please fill in all fields.", "Registration");
                 return;
             }
 
-            // TODO: save the new user via your Service/DAO
+            if (password != confirm)
+            {
+                RegMessage.Text = "Passwords do not match.";
+                RegMessage.Visibility = Visibility.Visible;
+                return;
+            }
+            RegMessage.Visibility = Visibility.Collapsed;
+
+            // TODO: save the new user via your Service/DAO (use the 'password' variable above)
             MessageBox.Show("Account created! You can now log in.", "Registration");
             Slide(toLogin: true);
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            if (LoginUsername.Text.Trim().Length == 0 || LoginPassword.Password.Length == 0)
+            string password = GetPassword(LoginPassword, LoginPasswordPlain);
+
+            if (LoginUsername.Text.Trim().Length == 0 || password.Length == 0)
             {
                 MessageBox.Show("Enter your username and password.", "Login");
                 return;
             }
 
-            // TODO: validate the credentials via your Service/DAO; only raise on success
+            // TODO: validate the credentials via your Service/DAO (use the 'password' variable above); only raise on success
             LoginSucceeded?.Invoke(this, EventArgs.Empty);
-        }
-
-        // ---------- Forgot password ----------
-        private void ForgotPassword_Click(object sender, MouseButtonEventArgs e)
-        {
-            // Carry over whatever username was already typed on the login form
-            ForgotUsername.Text = LoginUsername.Text;
-            ForgotNewPassword.Clear();
-            ForgotConfirmPassword.Clear();
-            ForgotMessage.Visibility = Visibility.Collapsed;
-
-            Fade(LoginPanel, false);
-            Fade(ForgotPanel, true);
-        }
-
-        private void BackToLogin_Click(object sender, MouseButtonEventArgs e) => ShowLoginForm();
-
-        private void ShowLoginForm()
-        {
-            Fade(ForgotPanel, false);
-            Fade(LoginPanel, true);
-        }
-
-        private void ResetPassword_Click(object sender, RoutedEventArgs e)
-        {
-            string username = ForgotUsername.Text.Trim();
-            string newPassword = ForgotNewPassword.Password;
-            string confirm = ForgotConfirmPassword.Password;
-
-            if (username.Length == 0 || newPassword.Length == 0 || confirm.Length == 0)
-            {
-                ShowForgotMessage("Please fill in all fields.");
-                return;
-            }
-            if (newPassword.Length < 8)
-            {
-                ShowForgotMessage("The new password must be at least 8 characters.");
-                return;
-            }
-            if (newPassword != confirm)
-            {
-                ShowForgotMessage("The passwords do not match.");
-                return;
-            }
-
-            // TODO: check that the username exists and save the new password (hashed) via your Service/DAO, e.g.
-            // if (!userService.ResetPassword(username, newPassword))
-            // {
-            //     ShowForgotMessage("We couldn't find an account with that username.");
-            //     return;
-            // }
-
-            MessageBox.Show("Your password has been reset. You can now log in.", "Forgot Password");
-
-            ForgotNewPassword.Clear();
-            ForgotConfirmPassword.Clear();
-            LoginUsername.Text = username;
-            LoginPassword.Clear();
-            ShowLoginForm();
-        }
-
-        private void ShowForgotMessage(string message)
-        {
-            ForgotMessage.Text = message;
-            ForgotMessage.Foreground = new SolidColorBrush(Color.FromRgb(0xC8, 0x4B, 0x41));
-            ForgotMessage.Visibility = Visibility.Visible;
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) =>

@@ -70,6 +70,38 @@
             <Setter Property="IsHitTestVisible" Value="False"/>
         </Style>
 
+        <!-- Show / hide password eye toggle -->
+        <Style x:Key="EyeToggle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="ToolTip" Value="Show / hide password"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent">
+                            <TextBlock x:Name="icon" Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"
+                                       FontSize="13" Foreground="#333333"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="icon" Property="Foreground" Value="#27894C"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="icon" Property="Text" Value="&#xED1A;"/>
+                                <Setter TargetName="icon" Property="Foreground" Value="#27894C"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Buttons -->
         <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
@@ -142,21 +174,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Clickable text link (Forgot Password?, Back to Login) -->
-        <Style x:Key="LinkText" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="{StaticResource AppFont}"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="#27894C"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="TextDecorations" Value="Underline"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
     </UserControl.Resources>
 
     <!-- Card -->
@@ -181,31 +198,49 @@
             <StackPanel x:Name="RegisterPanel" Grid.Column="0" VerticalAlignment="Center"
                             Margin="50,0">
                 <TextBlock Text="Sign Up Account" FontFamily="{StaticResource AppFont}" FontSize="26"
-                               FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                               FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,16"/>
 
-                <Grid Margin="0,0,0,12">
+                <Grid Margin="0,0,0,10">
                     <TextBox x:Name="RegUsername" Style="{StaticResource FieldTextBox}"
                                  Tag="{Binding ElementName=RegUsernameHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="RegUsernameHint" Text="Username" Style="{StaticResource HintText}"/>
                     <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
-                <Grid Margin="0,0,0,12">
+                <Grid Margin="0,0,0,10">
                     <TextBox x:Name="RegEmail" Style="{StaticResource FieldTextBox}"
                                  Tag="{Binding ElementName=RegEmailHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="RegEmailHint" Text="Email" Style="{StaticResource HintText}"/>
                     <TextBlock Text="&#xE715;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
-                <Grid Margin="0,0,0,16">
+                <!-- Password -->
+                <Grid Margin="0,0,0,10">
                     <PasswordBox x:Name="RegPassword" Style="{StaticResource FieldPasswordBox}"
                                      Tag="{Binding ElementName=RegPasswordHint}" PasswordChanged="Field_Changed"/>
+                    <TextBox x:Name="RegPasswordPlain" Style="{StaticResource FieldTextBox}"
+                                 Visibility="Collapsed"
+                                 Tag="{Binding ElementName=RegPasswordHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="RegPasswordHint" Text="Password" Style="{StaticResource HintText}"/>
-                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
+                    <ToggleButton Style="{StaticResource EyeToggle}" Click="TogglePassword_Click"/>
                 </Grid>
 
+                <!-- Confirm password -->
+                <Grid Margin="0,0,0,6">
+                    <PasswordBox x:Name="RegConfirmPassword" Style="{StaticResource FieldPasswordBox}"
+                                     Tag="{Binding ElementName=RegConfirmPasswordHint}" PasswordChanged="Field_Changed"/>
+                    <TextBox x:Name="RegConfirmPasswordPlain" Style="{StaticResource FieldTextBox}"
+                                 Visibility="Collapsed"
+                                 Tag="{Binding ElementName=RegConfirmPasswordHint}" TextChanged="Field_Changed"/>
+                    <TextBlock x:Name="RegConfirmPasswordHint" Text="Confirm password" Style="{StaticResource HintText}"/>
+                    <ToggleButton Style="{StaticResource EyeToggle}" Click="TogglePassword_Click"/>
+                </Grid>
+
+                <TextBlock x:Name="RegMessage" FontFamily="{StaticResource AppFont}" FontSize="11"
+                               FontWeight="SemiBold" Foreground="#C84B41" TextWrapping="Wrap"
+                               TextAlignment="Center" Margin="0,0,0,8" Visibility="Collapsed"/>
+
                 <Button Content="Register" Style="{StaticResource PrimaryButton}" Click="Register_Click"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
             </StackPanel>
 
             <!-- ============ LOGIN FORM (right) ============ -->
@@ -221,65 +256,20 @@
                     <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
-                <Grid Margin="0,0,0,8">
+                <Grid Margin="0,0,0,16">
                     <PasswordBox x:Name="LoginPassword" Style="{StaticResource FieldPasswordBox}"
                                      Tag="{Binding ElementName=LoginPasswordHint}" PasswordChanged="Field_Changed"/>
+                    <TextBox x:Name="LoginPasswordPlain" Style="{StaticResource FieldTextBox}"
+                                 Visibility="Collapsed"
+                                 Tag="{Binding ElementName=LoginPasswordHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="LoginPasswordHint" Text="Password" Style="{StaticResource HintText}"/>
-                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
+                    <ToggleButton Style="{StaticResource EyeToggle}" Click="TogglePassword_Click"/>
                 </Grid>
-
-                <TextBlock Text="Forgot Password?" Style="{StaticResource LinkText}"
-                           Margin="0,0,0,12" MouseLeftButtonUp="ForgotPassword_Click"/>
 
                 <Button Content="Login" Style="{StaticResource PrimaryButton}" Click="Login_Click"/>
-
-                <TextBlock Text="" FontFamily="{StaticResource AppFont}"
-                               FontSize="11" HorizontalAlignment="Center" Margin="0,16,0,10"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                   
-                </StackPanel>
             </StackPanel>
 
-            <!-- ============ FORGOT PASSWORD FORM (right, replaces login) ============ -->
-            <StackPanel x:Name="ForgotPanel" Grid.Column="1" VerticalAlignment="Center"
-                            Margin="50,0" Opacity="0" IsHitTestVisible="False">
-                <TextBlock Text="Reset Password" FontFamily="{StaticResource AppFont}" FontSize="26"
-                               FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                <TextBlock Text="Enter your username and choose a new password."
-                               FontFamily="{StaticResource AppFont}" FontSize="11" Foreground="#666666"
-                               TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16"/>
-
-                <Grid Margin="0,0,0,12">
-                    <TextBox x:Name="ForgotUsername" Style="{StaticResource FieldTextBox}"
-                                 Tag="{Binding ElementName=ForgotUsernameHint}" TextChanged="Field_Changed"/>
-                    <TextBlock x:Name="ForgotUsernameHint" Text="Username" Style="{StaticResource HintText}"/>
-                    <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
-                </Grid>
-
-                <Grid Margin="0,0,0,12">
-                    <PasswordBox x:Name="ForgotNewPassword" Style="{StaticResource FieldPasswordBox}"
-                                     Tag="{Binding ElementName=ForgotNewPasswordHint}" PasswordChanged="Field_Changed"/>
-                    <TextBlock x:Name="ForgotNewPasswordHint" Text="New password" Style="{StaticResource HintText}"/>
-                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
-                </Grid>
-
-                <Grid Margin="0,0,0,10">
-                    <PasswordBox x:Name="ForgotConfirmPassword" Style="{StaticResource FieldPasswordBox}"
-                                     Tag="{Binding ElementName=ForgotConfirmPasswordHint}" PasswordChanged="Field_Changed"/>
-                    <TextBlock x:Name="ForgotConfirmPasswordHint" Text="Confirm password" Style="{StaticResource HintText}"/>
-                    <TextBlock Text="&#xE72E;" Style="{StaticResource FieldIcon}"/>
-                </Grid>
-
-                <TextBlock x:Name="ForgotMessage" FontFamily="{StaticResource AppFont}" FontSize="11"
-                               FontWeight="SemiBold" TextWrapping="Wrap" TextAlignment="Center"
-                               Margin="0,0,0,10" Visibility="Collapsed"/>
-
-                <Button Content="Reset Password" Style="{StaticResource PrimaryButton}" Click="ResetPassword_Click"/>
-                <TextBlock Text="Back to Login" Style="{StaticResource LinkText}"
-                           Margin="0,14,0,0" MouseLeftButtonUp="BackToLogin_Click"/>
-            </StackPanel>
-
-            <!-- ============ BLUE SLIDING OVERLAY ============ -->
+            <!-- ============ SLIDING OVERLAY ============ -->
             <!-- 520 wide: 400 visible + 120 hidden past the card edge (hides outer rounding) -->
             <Border x:Name="Overlay" Grid.ColumnSpan="2" Width="520"
                         HorizontalAlignment="Left" Background=

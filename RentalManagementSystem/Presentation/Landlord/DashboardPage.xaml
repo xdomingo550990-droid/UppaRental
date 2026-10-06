@@ -1,4 +1,4 @@
-﻿<Window x:Class="RentalManagementSystem.Presentation.DashboardPage"
+<Window x:Class="RentalManagementSystem.Presentation.DashboardPage"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -183,16 +183,23 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Header: brand + toggle -->
+                <!-- Header: logo + brand + toggle -->
                 <Grid Grid.Row="0" Height="44" Margin="0,0,0,12">
-                    <StackPanel x:Name="BrandPanel" Orientation="Horizontal" HorizontalAlignment="Left" Margin="2,0,0,0">
-                        <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
-                            <TextBlock Text="U" Foreground="White" FontWeight="Bold" FontSize="16"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="UPPA RENTAL" FontWeight="Bold" FontSize="14" Foreground="White"/>
-                        </StackPanel>
+                    <StackPanel x:Name="BrandPanel" Orientation="Horizontal" HorizontalAlignment="Left"
+                                VerticalAlignment="Center" Margin="2,0,0,0">
+                        <Image Source="/Resources/Icons/whiteLogo.png" Width="59" Height="43"
+                               Stretch="Uniform" RenderTransformOrigin="0.5,0.5">
+                            <Image.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform/>
+                                    <SkewTransform AngleY="0.161"/>
+                                    <RotateTransform/>
+                                    <TranslateTransform Y="0.097"/>
+                                </TransformGroup>
+                            </Image.RenderTransform>
+                        </Image>
+                        <TextBlock Text="UPPA RENTAL" FontWeight="Bold" FontSize="14"
+                                   Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button x:Name="btnToggleSidebar" Style="{StaticResource ToggleButtonStyle}"
                             HorizontalAlignment="Right" Click="ToggleSidebar_Click"/>

@@ -12,8 +12,7 @@ namespace RentalManagementSystem.Model
         public int RenterId { get; set; }          // who reserved
         public int RoomId { get; set; }            // which room
         public int? TermId { get; set; }           // rental term used (can be empty)
-        public int? UserId { get; set; }           // staff who encoded it (can be empty)
-
+       
         public DateTime ReservationDate { get; set; } = DateTime.Now;
         public DateTime StartDate { get; set; } = DateTime.Now;     // move-in date
         public DateTime EndDate { get; set; } = DateTime.Now;

@@ -10,7 +10,7 @@ namespace RentalManagementSystem.Model
         // What this payment is for (fill ONE of the first two)
         public int? BillId { get; set; }           // paying a bill
         public int? ReservationId { get; set; }    // paying a reservation down payment (no bill yet)
-        public int? UserId { get; set; }           // staff who received the payment
+        public User? UserId { get; set; }           // staff who received the payment
 
         public DateTime PaymentDate { get; set; } = DateTime.Now;
         public decimal Amount { get; set; }

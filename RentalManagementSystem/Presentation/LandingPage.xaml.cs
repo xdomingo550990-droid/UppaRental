@@ -16,11 +16,15 @@ namespace RentalManagementSystem.Presentation
     /// Interaction logic for LandingPage.xaml
     /// </summary>
     public partial class LandingPage : Window
+
     {
         public LandingPage()
         {
             InitializeComponent();
+
         }
+
+        
 
         // Nav "Login" -> open the popup on the Login side
         private void LoginButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: true);

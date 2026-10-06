@@ -5,6 +5,7 @@ namespace RentalManagementSystem.Model
     public class Reservation
     {
         // Auto-properties replacing Java fields and getters/setters
+        public User UserId { get; set; }    // User.UserId = index nato sa user na pangcheck if naay reservationsi index user
         public int ReservationId { get; set; }
         public DateTime ReservationDate { get; set; } = DateTime.Now;
         public DateTime StartDate { get; set; } = DateTime.Now;

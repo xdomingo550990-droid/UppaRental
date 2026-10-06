@@ -1,6 +1,6 @@
 ﻿namespace RentalManagementSystem.Model
 {
-    public class Room
+    public class Room 
     {
         // Auto-properties with default empty strings to avoid CS8618 nullability warnings
         public int RoomId { get; set; }

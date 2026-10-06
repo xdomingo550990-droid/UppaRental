@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,6 +36,7 @@ namespace RentalManagementSystem.Presentation
         public string Location { get; set; } = "";
         public string Type { get; set; } = "";
         public string Floor { get; set; } = "";
+        public int Floors { get; set; } = 1;                // number of floors
         public string RoomType { get; set; } = "";
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
@@ -58,7 +59,7 @@ namespace RentalManagementSystem.Presentation
 
         private string AutoDescription =>
             (string.IsNullOrWhiteSpace(RoomType) ? "Rental unit" : RoomType) +
-            (string.IsNullOrWhiteSpace(Floor) ? "" : $" on the {Floor}") +
+            (Floors > 1 ? $" with {Floors} floors" : "") +
             $". {Term} rental.";
 
         public string PriceUnit => Term == "Long term" ? "/ month" : "/ night";
@@ -168,16 +169,17 @@ namespace RentalManagementSystem.Presentation
                 ? r.Notes
                 : (r.Amenities != null && r.Amenities.Count > 0 ? string.Join(", ", r.Amenities) + "." : "");
 
-            return new RentalProperty
+            var property = new RentalProperty
             {
                 Name = r.Name,
-                Location = string.IsNullOrWhiteSpace(r.Floor) ? "Uppa Rental" : r.Floor,
+                Location = "Uppa Rental",
                 Type = r.RoomType,
                 Floor = r.Floor,
+                Floors = Math.Max(1, r.Floors),
                 RoomType = r.RoomType,
-                Bedrooms = BedroomsFromRoomType(r.RoomType),
-                Bathrooms = 1,
-                SqFt = 0,
+                Bedrooms = r.Bedrooms,
+                Bathrooms = r.Bathrooms,
+                SqFt = r.SizeSqFt,
                 Price = r.MonthlyRent,
                 Status = r.IsDraft ? "Draft" : (string.IsNullOrWhiteSpace(r.Status) ? "Available" : r.Status),
                 Term = "Long term",
@@ -186,12 +188,12 @@ namespace RentalManagementSystem.Presentation
                 Description = description,
                 IsNew = true
             };
-        }
 
-        private static int BedroomsFromRoomType(string roomType)
-        {
-            if (string.IsNullOrEmpty(roomType)) return 0;
-            return char.IsDigit(roomType[0]) ? roomType[0] - '0' : 0;   // "2-Bedroom" -> 2, "Studio" -> 0
+            // Capacity and utility settings live in RentalPropertyExtras.
+            property.SetMaxCapacity(Math.Max(1, r.MaxCapacity));
+            property.SetUtilities(r.Utilities);
+
+            return property;
         }
 
         // ---------- Categories for the Overview page ----------

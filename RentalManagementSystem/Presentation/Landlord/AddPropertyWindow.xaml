@@ -326,70 +326,68 @@
                             <TextBlock Text="e.g., Unit 101 or Suite 4B" FontSize="11" Foreground="#8A9A8D" Margin="2,4,0,0"/>
                         </StackPanel>
 
-                        <StackPanel Grid.Row="0" Grid.Column="2">
-                            <TextBlock Text="Floor Level" Style="{StaticResource FieldLabel}"/>
-                            <ComboBox x:Name="cmbFloor">
-                                <ComboBoxItem Content="1st Floor"/>
-                                <ComboBoxItem Content="2nd Floor"/>
-                                <ComboBoxItem Content="3rd Floor"/>
-                                <ComboBoxItem Content="4th Floor"/>
-                                <ComboBoxItem Content="Penthouse"/>
-                            </ComboBox>
-                        </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="2">
+            <TextBlock Text="Number of Floors *" Style="{StaticResource FieldLabel}"/>
+            <Border Style="{StaticResource InputBorder}">
+                <TextBox x:Name="txtFloors" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+            </Border>
+        </StackPanel>
 
-                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,18,0,0">
-                            <TextBlock Text="Room Type / Layout" Style="{StaticResource FieldLabel}"/>
-                            <ComboBox x:Name="cmbRoomType">
-                                <ComboBoxItem Content="Studio"/>
-                                <ComboBoxItem Content="1-Bedroom"/>
-                                <ComboBoxItem Content="2-Bedroom"/>
-                                <ComboBoxItem Content="3-Bedroom"/>
-                                <ComboBoxItem Content="Commercial Space"/>
-                            </ComboBox>
-                        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,18,0,0">
+            <TextBlock Text="Property Type" Style="{StaticResource FieldLabel}"/>
+            <ComboBox x:Name="cmbRoomType">
+                <ComboBoxItem Content="Studio"/>
+                <ComboBoxItem Content="Guesthouse"/>
+                <ComboBoxItem Content="Cabin"/>
+                <ComboBoxItem Content="Townhouse"/>
+            </ComboBox>
+        </StackPanel>
 
-                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,18,0,0">
-                            <TextBlock Text="Unit Size / Area" Style="{StaticResource FieldLabel}"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Style="{StaticResource InputBorder}">
-                                    <TextBox x:Name="txtSize" Style="{StaticResource PlainTextBox}"/>
-                                </Border>
-                                <Border Grid.Column="1" Background="#F0F4F1" CornerRadius="10" Padding="4" Margin="8,0,0,0" Height="40">
-                                    <StackPanel Orientation="Horizontal">
-                                        <RadioButton x:Name="rbSqft" Content="sq ft" GroupName="SizeUnit" IsChecked="True"
-                                                     Style="{StaticResource UnitToggle}"/>
-                                        <RadioButton x:Name="rbSqm" Content="sqm" GroupName="SizeUnit"
-                                                     Style="{StaticResource UnitToggle}"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
+        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,18,0,0">
+            <TextBlock Text="Unit Size / Area" Style="{StaticResource FieldLabel}"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Style="{StaticResource InputBorder}">
+                    <TextBox x:Name="txtSize" Style="{StaticResource PlainTextBox}"/>
+                </Border>
+                <Border Grid.Column="1" Background="#F0F4F1" CornerRadius="10" Padding="4" Margin="8,0,0,0" Height="40">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="rbSqft" Content="sq ft" GroupName="SizeUnit" IsChecked="True"
+                                     Style="{StaticResource UnitToggle}"/>
+                        <RadioButton x:Name="rbSqm" Content="sqm" GroupName="SizeUnit"
+                                     Style="{StaticResource UnitToggle}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
 
-                        <!-- Maximum capacity -->
-                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,18,0,0">
-                            <TextBlock Text="Maximum Capacity (persons)" Style="{StaticResource FieldLabel}"/>
-                            <Border Style="{StaticResource InputBorder}">
-                                <TextBox x:Name="txtCapacity" Style="{StaticResource PlainTextBox}" Text="2"/>
-                            </Border>
-                            <TextBlock Text="Most people allowed to stay in this unit" FontSize="11"
-                                       Foreground="#8A9A8D" Margin="2,4,0,0"/>
-                        </StackPanel>
+        <!-- Bedrooms | Bathrooms -->
+        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,18,0,0">
+            <TextBlock Text="Number of Bedrooms *" Style="{StaticResource FieldLabel}"/>
+            <Border Style="{StaticResource InputBorder}">
+                <TextBox x:Name="txtBedrooms" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+            </Border>
+        </StackPanel>
 
-                        <StackPanel Grid.Row="3" Grid.ColumnSpan="3" Margin="0,18,0,0">
-                            <TextBlock Text="Initial Status" Style="{StaticResource FieldLabel}"/>
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton x:Name="rbAvailable" Content="Available" GroupName="Status" IsChecked="True"
-                                             Style="{StaticResource StatusPill}" Background="#D0F0C0" Foreground="#004225"/>
-                                <RadioButton x:Name="rbReserved" Content="Reserved" GroupName="Status"
-                                             Style="{StaticResource StatusPill}" Background="#FFF3C4" Foreground="#8C6B00"/>
-                                <RadioButton x:Name="rbOccupied" Content="Occupied" GroupName="Status"
-                                             Style="{StaticResource StatusPill}" Background="#FFDCD8" Foreground="#A81C0C"/>
-                            </StackPanel>
-                        </StackPanel>
+        <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,18,0,0">
+            <TextBlock Text="Number of Bathrooms *" Style="{StaticResource FieldLabel}"/>
+            <Border Style="{StaticResource InputBorder}">
+                <TextBox x:Name="txtBathrooms" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+            </Border>
+        </StackPanel>
+
+        <!-- Maximum capacity -->
+        <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,18,0,0">
+            <TextBlock Text="Maximum Capacity (persons)" Style="{StaticResource FieldLabel}"/>
+            <Border Style="{StaticResource InputBorder}">
+                <TextBox x:Name="txtCapacity" Style="{StaticResource PlainTextBox}" Text="2" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+            </Border>
+            <TextBlock Text="Most people allowed to stay in this unit" FontSize="11"
+                       Foreground="#8A9A8D" Margin="2,4,0,0"/>
+        </StackPanel>
                     </Grid>
 
                     <!-- STEP 2: PRICING & FINANCIAL DETAILS -->

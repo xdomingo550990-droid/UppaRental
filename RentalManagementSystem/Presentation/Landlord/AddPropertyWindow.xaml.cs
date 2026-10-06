@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,7 +13,10 @@ namespace RentalManagementSystem.Presentation
     public class PropertyFormResult
     {
         public string Name { get; set; } = "";
-        public string Floor { get; set; } = "";
+        public string Floor { get; set; } = "";        // same value as Floors, kept for older code
+        public int Floors { get; set; }
+        public int Bedrooms { get; set; }
+        public int Bathrooms { get; set; }
         public string RoomType { get; set; } = "";
         public decimal MonthlyRent { get; set; }
         public decimal SecurityDeposit { get; set; }
@@ -65,6 +69,21 @@ namespace RentalManagementSystem.Presentation
                 if (string.IsNullOrWhiteSpace(txtName.Text))
                 {
                     ShowError("Please enter a property or unit name.");
+                    return;
+                }
+                if (!int.TryParse(txtFloors.Text.Trim(), out int floors) || floors < 1)
+                {
+                    ShowError("Number of floors must be a whole number of at least 1.");
+                    return;
+                }
+                if (!int.TryParse(txtBedrooms.Text.Trim(), out _))
+                {
+                    ShowError("Please enter the number of bedrooms (0 if none).");
+                    return;
+                }
+                if (!int.TryParse(txtBathrooms.Text.Trim(), out _))
+                {
+                    ShowError("Please enter the number of bathrooms (0 if none).");
                     return;
                 }
                 if (!int.TryParse(txtCapacity.Text.Trim(), out int capacity) || capacity < 1)
@@ -142,9 +161,12 @@ namespace RentalManagementSystem.Presentation
                 Wifi = ucWifi.Option
             };
 
-            string status = "Available";
-            if (rbReserved.IsChecked == true) status = "Reserved";
-            else if (rbOccupied.IsChecked == true) status = "Occupied";
+            int.TryParse(txtFloors.Text.Trim(), out int floors);
+            int.TryParse(txtBedrooms.Text.Trim(), out int bedrooms);
+            int.TryParse(txtBathrooms.Text.Trim(), out int bathrooms);
+
+            // New properties always start as Available.
+            const string status = "Available";
 
             var amenities = new List<string>();
             if (tbAircon.IsChecked == true) amenities.Add("Air Conditioning");
@@ -156,7 +178,10 @@ namespace RentalManagementSystem.Presentation
             Result = new PropertyFormResult
             {
                 Name = txtName.Text.Trim(),
-                Floor = (cmbFloor.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
+                Floor = floors.ToString(CultureInfo.InvariantCulture),
+                Floors = floors,
+                Bedrooms = bedrooms,
+                Bathrooms = bathrooms,
                 RoomType = (cmbRoomType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
                 MonthlyRent = rent,
                 SecurityDeposit = deposit,
@@ -172,6 +197,22 @@ namespace RentalManagementSystem.Presentation
                 PhotoPaths = new List<string>(_uploadedPhotoPaths),
                 Notes = txtNotes.Text.Trim()
             };
+        }
+
+        // ---------- number-only text boxes ----------
+
+        private static bool AllDigits(string? text) =>
+            !string.IsNullOrEmpty(text) && text.All(c => c >= '0' && c <= '9');
+
+        private void NumberOnly_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
+            e.Handled = !AllDigits(e.Text);
+
+        private void NumberOnly_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (e.DataObject.GetDataPresent(typeof(string)) &&
+                e.DataObject.GetData(typeof(string)) is string text && AllDigits(text.Trim()))
+                return;
+            e.CancelCommand();
         }
 
         private void ShowError(string message)

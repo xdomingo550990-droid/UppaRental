@@ -53,7 +53,7 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Location | Room type -->
+                    <!-- Location | Number of floors -->
                     <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,14">
                         <TextBlock Text="Location" Style="{StaticResource FieldLabel}"/>
                         <Border Style="{StaticResource InputBorder}">
@@ -61,57 +61,66 @@
                         </Border>
                     </StackPanel>
                     <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,14">
-                        <TextBlock Text="Room type" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox x:Name="cmbType" IsEditable="True">
+                        <TextBlock Text="Number of Floors *" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource InputBorder}">
+                            <TextBox x:Name="txtFloors" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Property type | Price -->
+                    <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,14">
+                        <TextBlock Text="Property Type" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox x:Name="cmbType">
                             <ComboBoxItem Content="Studio"/>
-                            <ComboBoxItem Content="1-Bedroom"/>
-                            <ComboBoxItem Content="2-Bedroom"/>
-                            <ComboBoxItem Content="3-Bedroom"/>
-                            <ComboBoxItem Content="Commercial"/>
-                            <ComboBoxItem Content="Cottage"/>
-                            <ComboBoxItem Content="Chalet"/>
-                            <ComboBoxItem Content="Penthouse"/>
-                            <ComboBoxItem Content="Farmhouse"/>
+                            <ComboBoxItem Content="Guesthouse"/>
+                            <ComboBoxItem Content="Cabin"/>
+                            <ComboBoxItem Content="Townhouse"/>
                         </ComboBox>
                     </StackPanel>
-
-                    <!-- Bedrooms | Bathrooms -->
-                    <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,14">
-                        <TextBlock Text="Bedrooms (0 = studio)" Style="{StaticResource FieldLabel}"/>
-                        <Border Style="{StaticResource InputBorder}">
-                            <TextBox x:Name="txtBedrooms" Style="{StaticResource PlainTextBox}"/>
-                        </Border>
-                    </StackPanel>
                     <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,14">
-                        <TextBlock Text="Bathrooms" Style="{StaticResource FieldLabel}"/>
-                        <Border Style="{StaticResource InputBorder}">
-                            <TextBox x:Name="txtBathrooms" Style="{StaticResource PlainTextBox}"/>
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Size | Price -->
-                    <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,14">
-                        <TextBlock Text="Size (sqft)" Style="{StaticResource FieldLabel}"/>
-                        <Border Style="{StaticResource InputBorder}">
-                            <TextBox x:Name="txtSqFt" Style="{StaticResource PlainTextBox}"/>
-                        </Border>
-                    </StackPanel>
-                    <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,14">
                         <TextBlock Text="Price (₱)" Style="{StaticResource FieldLabel}"/>
                         <Border Style="{StaticResource InputBorder}">
                             <TextBox x:Name="txtPrice" Style="{StaticResource PlainTextBox}"/>
                         </Border>
                     </StackPanel>
 
-                    <!-- Lease term | Status -->
+                    <!-- Bedrooms | Bathrooms -->
+                    <StackPanel Grid.Row="3" Grid.Column="0" Margin="0,0,0,14">
+                        <TextBlock Text="Number of Bedrooms *" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource InputBorder}">
+                            <TextBox x:Name="txtBedrooms" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,14">
+                        <TextBlock Text="Number of Bathrooms *" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource InputBorder}">
+                            <TextBox x:Name="txtBathrooms" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Size | Max capacity -->
                     <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,0,14">
+                        <TextBlock Text="Size (sqft)" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource InputBorder}">
+                            <TextBox x:Name="txtSqFt" Style="{StaticResource PlainTextBox}"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,0,0,14">
+                        <TextBlock Text="Maximum capacity (persons)" Style="{StaticResource FieldLabel}"/>
+                        <Border Style="{StaticResource InputBorder}">
+                            <TextBox x:Name="txtCapacity" Style="{StaticResource PlainTextBox}" PreviewTextInput="NumberOnly_PreviewTextInput" DataObject.Pasting="NumberOnly_Pasting" MaxLength="3"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Lease term | Status -->
+                    <StackPanel Grid.Row="5" Grid.Column="0" Margin="0,0,0,14">
                         <TextBlock Text="Lease term" Style="{StaticResource FieldLabel}"/>
                         <ComboBox x:Name="cmbTerm" SelectedIndex="0">
                             <ComboBoxItem Content="Long term"/>
                             <ComboBoxItem Content="Short term"/>
                         </ComboBox>
                     </StackPanel>
-                    <StackPanel Grid.Row="4" Grid.Column="2" Margin="0,0,0,14">
+                    <StackPanel Grid.Row="5" Grid.Column="2" Margin="0,0,0,14">
                         <TextBlock Text="Status" Style="{StaticResource FieldLabel}"/>
                         <ComboBox x:Name="cmbStatus" SelectedIndex="0">
                             <ComboBoxItem Content="Available"/>
@@ -119,17 +128,6 @@
                             <ComboBoxItem Content="Occupied"/>
                         </ComboBox>
                     </StackPanel>
-
-                    <!-- Max capacity -->
-                    <StackPanel Grid.Row="5" Grid.Column="0" Margin="0,0,0,14">
-                        <TextBlock Text="Maximum capacity (persons)" Style="{StaticResource FieldLabel}"/>
-                        <Border Style="{StaticResource InputBorder}">
-                            <TextBox x:Name="txtCapacity" Style="{StaticResource PlainTextBox}"/>
-                        </Border>
-                    </StackPanel>
-                    <TextBlock Grid.Row="5" Grid.Column="2" Margin="0,0,0,22" VerticalAlignment="Bottom"
-                               Text="Most people allowed to stay in this unit." FontSize="11" Foreground="#8A9A8D"
-                               TextWrapping="Wrap"/>
 
                     <!-- Utility billing setup -->
                     <StackPanel Grid.Row="6" Grid.ColumnSpan="3" Margin="0,0,0,14">

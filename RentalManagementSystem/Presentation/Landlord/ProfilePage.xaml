@@ -38,9 +38,8 @@
                     <StackPanel>
 
                         <!-- Title + short description -->
-                        <TextBlock Text="Profile" Style="{StaticResource CardHeading}" Margin="0,0,0,2"/>
-                        <TextBlock Text="Your personal details and how renters can reach you."
-                                   Style="{StaticResource HintText}" Margin="0,0,0,20"/>
+                        <TextBlock Text="Your personal details and how renters can reach you." Style="{StaticResource CardHeading}" Margin="0,0,0,9"/>
+                        
 
                         <!-- Identity summary (name updates as you type) -->
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,20">

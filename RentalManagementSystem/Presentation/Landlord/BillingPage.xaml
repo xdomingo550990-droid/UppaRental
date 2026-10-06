@@ -204,7 +204,7 @@
         <!-- 1. Header -->
         <TextBlock Grid.Row="0" Text="Track invoices, collected rent, and outstanding balances."
                    Style="{StaticResource PageSubtitle}" FontWeight="SemiBold" Foreground="#1E3223"
-                   Margin="0,0,0,16"/>
+                   Margin="0,0,0,12"/>
 
         <!-- 2. Inline invoice form panel + divider -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">

@@ -6,18 +6,34 @@ namespace RentalManagementSystem.Model
     {
         // Auto-properties replacing Java fields and getters/setters
         public int ReservationId { get; set; }
+
+        // Links to other tables (the foreign keys)
+        public int RenterId { get; set; }          // who reserved
+        public int RoomId { get; set; }            // which room
+        public int? TermId { get; set; }           // rental term used (can be empty)
+        public int? UserId { get; set; }           // staff who encoded it (can be empty)
+
         public DateTime ReservationDate { get; set; } = DateTime.Now;
-        public DateTime StartDate { get; set; } = DateTime.Now;
+        public DateTime StartDate { get; set; } = DateTime.Now;     // move-in date
         public DateTime EndDate { get; set; } = DateTime.Now;
-        public int RentalDuration { get; set; }
-        public decimal TotalRent { get; set; }
-        public decimal DownPayment { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public int RentalDuration { get; set; }                     // in months
+
+        public decimal MonthlyRate { get; set; }                    // room rate at the time of booking
+        public decimal TotalRent { get; set; }                      // MonthlyRate x RentalDuration
+        public decimal DownPayment { get; set; }                    // TotalRent x downpayment rate
+
+        public string Status { get; set; } = "Pending";             // Pending, Reserved, Active, Completed, Cancelled
+        public DateTime CreatedAt { get; set; }
+
+        // Display only: filled by the DAO with a JOIN, NOT database columns
+        public string RenterName { get; set; } = string.Empty;
+        public string RenterContact { get; set; } = string.Empty;
+        public string RoomNumber { get; set; } = string.Empty;
 
         // Parameterless Constructor (for WPF data binding)
         public Reservation() { }
 
-        // Parameterized Constructor
+        // Parameterized Constructor (your original eight fields)
         public Reservation(int reservationId,
             DateTime reservationDate,
             DateTime startDate,

@@ -19,5 +19,8 @@
             RentalRate = rentalRate;
             Capacity = capacity;
         }
+        
+        // Lets a ComboBox show the type name (for example "Studio")
+        public override string ToString() => TypeName;
     }
 }

@@ -3,12 +3,12 @@ using System.Windows.Controls;
 
 namespace RentalManagementSystem.Presentation
 {
-    public partial class SettingsPage : UserControl
+    public partial class TenantProfilePage : UserControl
     {
-        public SettingsPage()
+        public TenantProfilePage()
         {
             InitializeComponent();
-            // TODO: load the saved profile from your database and fill the fields here.
+            // TODO: load the saved tenant profile from your database and fill the fields here.
         }
 
         // Saves the profile details.
@@ -16,7 +16,7 @@ namespace RentalManagementSystem.Presentation
         {
             if (string.IsNullOrWhiteSpace(txtFullName.Text))
             {
-                MessageBox.Show("Please enter your full name.", "Settings");
+                MessageBox.Show("Please enter your full name.", "Profile");
                 return;
             }
 
@@ -25,7 +25,7 @@ namespace RentalManagementSystem.Presentation
             // TODO: save these to your database / DAO:
             // txtFullName.Text, txtEmail.Text, txtPhone.Text
 
-            MessageBox.Show("Your settings have been saved.", "Settings");
+            MessageBox.Show("Your profile has been saved.", "Profile");
         }
     }
 }

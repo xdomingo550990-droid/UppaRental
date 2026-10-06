@@ -3,12 +3,12 @@ using System.Windows.Controls;
 
 namespace RentalManagementSystem.Presentation
 {
-    public partial class TenantSettingsPage : UserControl
+    public partial class ProfilePage : UserControl
     {
-        public TenantSettingsPage()
+        public ProfilePage()
         {
             InitializeComponent();
-            // TODO: load the saved tenant profile from your database and fill the fields here.
+            // TODO: load the saved profile from your database and fill the fields here.
         }
 
         // Saves the profile details.

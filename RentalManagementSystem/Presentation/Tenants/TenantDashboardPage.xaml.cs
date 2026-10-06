@@ -16,7 +16,7 @@ namespace RentalManagementSystem.Presentation
             InitializeComponent();
 
             // Overview is the page shown when the dashboard opens
-            MainContentFrame.Content = new OverviewPage();
+            MainContentFrame.Content = new TenantOverviewPage();
         }
 
         private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
@@ -54,23 +54,31 @@ namespace RentalManagementSystem.Presentation
 
             MainContentFrame.Content = nav.Name switch
             {
-                nameof(btnOverview) => new OverviewPage(),
+                nameof(btnOverview) => new TenantOverviewPage(),
+                nameof(btnReservations) => new TenantReservationsPage(),
                 nameof(btnBilling) => new TenantBillingPage(),
-                nameof(btnMessages) => new TenantMessagesPage(),
-                nameof(btnSettings) => new TenantSettingsPage(),
+                nameof(btnSettings) => new TenantProfilePage(),    // opened by the profile card at the bottom of the sidebar
                 _ => MainContentFrame.Content
             };
         }
 
-        // Sends what you type in the top search bar to the Overview page
+        // Sends what you type in the top search bar to the page that is open
         private void Search_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (MainContentFrame == null) return;
 
-            if (MainContentFrame.Content is OverviewPage overview)
-                overview.SetSearch(txtSearch.Text);
-            else if (MainContentFrame.Content is TenantBillingPage billing)
-                billing.ApplyGlobalSearch(txtSearch.Text);
+            switch (MainContentFrame.Content)
+            {
+                case TenantOverviewPage overview:
+                    overview.SetSearch(txtSearch.Text);
+                    break;
+                case TenantReservationsPage reservations:
+                    reservations.ApplyGlobalSearch(txtSearch.Text);
+                    break;
+                case TenantBillingPage billing:
+                    billing.ApplyGlobalSearch(txtSearch.Text);
+                    break;
+            }
         }
 
         private void LogOutButton_Click(object sender, RoutedEventArgs e)

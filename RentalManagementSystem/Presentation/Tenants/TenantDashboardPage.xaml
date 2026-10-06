@@ -90,6 +90,42 @@
             </Setter>
         </Style>
 
+        <!-- Bottom profile card: a RadioButton in the same group as the nav items,
+             so clicking it opens the Profile page and it highlights while Profile is open. -->
+        <Style x:Key="ProfileCardStyle" TargetType="RadioButton">
+            <Setter Property="GroupName" Value="MainNav"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="bg" Background="#1AFFFFFF" CornerRadius="14" Padding="6"
+                                BorderBrush="Transparent" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
+                                    <TextBlock Text="J" Foreground="White" FontWeight="Bold" FontSize="14"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Juan Dela Cruz" FontWeight="Bold" FontSize="13" Foreground="White"/>
+                                    <TextBlock Text="Tenant" FontSize="11" Foreground="#A9BFAE"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#2EFFFFFF"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#33FFFFFF"/>
+                                <Setter TargetName="bg" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Round hamburger toggle -->
         <Style x:Key="ToggleButtonStyle" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
@@ -156,7 +192,6 @@
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="UPPA RENTAL" FontWeight="Bold" FontSize="14" Foreground="White"/>
-                            <TextBlock Text="TENANT PORTAL" FontSize="10" FontWeight="SemiBold" Foreground="#E0A08A"/>
                         </StackPanel>
                     </StackPanel>
                     <Button x:Name="btnToggleSidebar" Style="{StaticResource ToggleButtonStyle}"
@@ -170,31 +205,20 @@
 
                     <Border Style="{StaticResource NavDivider}"/>
 
+                    <RadioButton x:Name="btnReservations" Style="{StaticResource NavItemStyle}"
+                                 Tag="&#xE787;" Content="My Reservations" Click="NavButton_Click"/>
                     <RadioButton x:Name="btnBilling" Style="{StaticResource NavItemStyle}"
                                  Tag="&#xE8C7;" Content="Billing and Payments" Click="NavButton_Click"/>
-                    <RadioButton x:Name="btnMessages" Style="{StaticResource NavItemStyle}"
-                                 Tag="&#xE8BD;" Content="Messages" Click="NavButton_Click"/>
 
                     <Border Style="{StaticResource NavDivider}"/>
-                    <RadioButton x:Name="btnSettings" Style="{StaticResource NavItemStyle}"
-                                 Tag="&#xE13D;" Content="Profile" Click="NavButton_Click"/>
                     <Button x:Name="btnLogout" Style="{StaticResource LogoutStyle}"
                             Tag="&#xE7E8;" Content="Logout" Click="LogOutButton_Click"/>
                 </StackPanel>
 
-                <!-- Bottom profile -->
-                <Border Grid.Row="2" Background="#1AFFFFFF" CornerRadius="14" Padding="6" Margin="0,10,0,0">
-                    <StackPanel Orientation="Horizontal">
-                        <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
-                            <TextBlock Text="J" Foreground="White" FontWeight="Bold" FontSize="14"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Juan Dela Cruz" FontWeight="Bold" FontSize="13" Foreground="White"/>
-                            <TextBlock Text="Tenant" FontSize="11" Foreground="#A9BFAE"/>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
+                <!-- Bottom profile: click it to open the Profile page -->
+                <RadioButton x:Name="btnSettings" Grid.Row="2" Margin="0,10,0,0"
+                             Style="{StaticResource ProfileCardStyle}"
+                             Content="Profile" Click="NavButton_Click"/>
             </Grid>
         </Border>
 

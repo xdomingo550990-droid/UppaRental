@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
@@ -55,12 +56,9 @@ namespace RentalManagementSystem.Presentation
             {
                 nameof(btnOverview) => new OverviewPage(),
                 nameof(btnProperties) => new UnitsPage(),
-                nameof(btnReservations) => new ReservationsPage(),
-                nameof(btnRenters) => new RentersPage(),
+                nameof(btnRenters) => new RentersPage(),      // Reservations now lives inside this page
                 nameof(btnBilling) => new BillingPage(),
-                nameof(btnMessages) => new MessagesPage(),
-                nameof(btnReports) => new ReportsPage(),
-                nameof(btnSettings) => new SettingsPage(),
+                nameof(btnSettings) => new ProfilePage(),    // profile card at the bottom of the sidebar
                 _ => MainContentFrame.Content
             };
         }
@@ -94,7 +92,7 @@ namespace RentalManagementSystem.Presentation
             this.Close();                      // ...then close the dashboard
         }
 
-        private void btnSettings_Checked(object sender, RoutedEventArgs e)
+        private void btnProperties_Checked(object sender, RoutedEventArgs e)
         {
 
         }

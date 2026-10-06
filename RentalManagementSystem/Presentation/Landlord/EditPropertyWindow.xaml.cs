@@ -3,14 +3,9 @@ using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Xml.Linq;
 
 namespace RentalManagementSystem.Presentation
 {
-    /// <summary>
-    /// Edit popup for one property. The property is only changed when Save is pressed
-    /// and every field is valid, so Cancel never leaves a half-edited property behind.
-    /// </summary>
     public partial class EditPropertyWindow : Window
     {
         private readonly RentalProperty _property;
@@ -30,6 +25,12 @@ namespace RentalManagementSystem.Presentation
             txtPrice.Text = _property.Price.ToString("0.##", CultureInfo.InvariantCulture);
             txtDescription.Text = _property.Description;
             txtPhoto.Text = _property.ImagePath;
+            txtCapacity.Text = Math.Max(1, _property.GetMaxCapacity()).ToString(CultureInfo.InvariantCulture);
+
+            var utilities = _property.GetUtilities();
+            ucWater.Option = utilities.Water ?? new UtilityOption();
+            ucElectricity.Option = utilities.Electricity ?? new UtilityOption();
+            ucWifi.Option = utilities.Wifi ?? new UtilityOption();
 
             Select(cmbTerm, _property.Term);
             Select(cmbStatus, _property.Status);
@@ -90,6 +91,14 @@ namespace RentalManagementSystem.Presentation
             if (!decimal.TryParse(priceText, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal price) || price < 0)
             { Fail("Price must be a number, 0 or more."); return; }
 
+            if (!int.TryParse(txtCapacity.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int capacity) || capacity < 1)
+            { Fail("Maximum capacity must be a whole number of at least 1."); return; }
+
+            if (!ucWater.TryValidate("water", out string utilError) ||
+                !ucElectricity.TryValidate("electricity", out utilError) ||
+                !ucWifi.TryValidate("Wi-Fi", out utilError))
+            { Fail(utilError); return; }
+
             // ----- apply -----
             string roomType = (cmbType.Text ?? "").Trim();
 
@@ -101,6 +110,13 @@ namespace RentalManagementSystem.Presentation
             _property.Bathrooms = bathrooms;
             _property.SqFt = sqft;
             _property.Price = price;
+            _property.SetMaxCapacity(capacity);
+            _property.SetUtilities(new UtilitySettings
+            {
+                Water = ucWater.Option,
+                Electricity = ucElectricity.Option,
+                Wifi = ucWifi.Option
+            });
             _property.Term = SelectedText(cmbTerm);
             _property.Status = SelectedText(cmbStatus);
             _property.Description = txtDescription.Text.Trim();

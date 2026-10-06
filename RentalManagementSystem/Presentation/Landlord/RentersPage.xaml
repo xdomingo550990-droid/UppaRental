@@ -192,476 +192,53 @@
                 <Setter Property="BorderBrush" Value="#B94A48"/>
                 <Setter Property="Foreground" Value="White"/>
             </Style>
+
+            <!-- Show/hide helper for reservation-only text in the table -->
+            <BooleanToVisibilityConverter x:Key="B2V"/>
+
+            <!-- Segmented "New Renter | Reservation" switch (sits on the dark form panel) -->
+            <Style x:Key="ModeTab" TargetType="RadioButton">
+                <Setter Property="Foreground" Value="#CFE0D3"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="bd" CornerRadius="7" Padding="16,6" Background="Transparent">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  RecognizesAccessKey="False"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#1FFFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="White"/>
+                                    <Setter Property="Foreground" Value="#1C3527"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Tabs: Renters | Reservations -->
-            <RowDefinition Height="*"/>    <!-- Selected tab content -->
-        </Grid.RowDefinitions>
-
-        <!-- Tab switch -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-            <RadioButton x:Name="tabRenters" Content="Renters" GroupName="RentersTabs" IsChecked="True"
-                         Style="{StaticResource FilterPill}" Checked="Tab_Checked"/>
-            <RadioButton x:Name="tabReservations" Content="Reservations" GroupName="RentersTabs"
-                         Style="{StaticResource FilterPill}" Checked="Tab_Checked"/>
-        </StackPanel>
-
-        <!-- Reservation feature (built into this page; shown when the Reservations tab is selected).
-             Its styles live in this grid's own resources so they never clash with the Renters styles. -->
-        <Grid x:Name="ReservationsView" Grid.Row="1" Visibility="Collapsed">
-            <Grid.Resources>
-                <!-- Palette -->
-                <SolidColorBrush x:Key="Primary" Color="#1E3223"/>
-                <SolidColorBrush x:Key="PrimaryHover" Color="#2B4A33"/>
-                <SolidColorBrush x:Key="Gold" Color="#B8892A"/>
-                <SolidColorBrush x:Key="GoldSoft" Color="#FBF3DC"/>
-                <SolidColorBrush x:Key="Brown" Color="#7A5A12"/>
-                <SolidColorBrush x:Key="Muted" Color="#6B7A70"/>
-                <SolidColorBrush x:Key="Line" Color="#E3EBE5"/>
-
-                <!-- White rounded card -->
-                <Style x:Key="Card" TargetType="Border">
-                    <Setter Property="Background" Value="White"/>
-                    <Setter Property="CornerRadius" Value="12"/>
-                    <Setter Property="Padding" Value="20"/>
-                    <Setter Property="Effect">
-                        <Setter.Value>
-                            <DropShadowEffect Color="#1E3223" Direction="270" ShadowDepth="4" BlurRadius="18" Opacity="0.12"/>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <Style x:Key="CardTitle" TargetType="TextBlock">
-                    <Setter Property="FontSize" Value="17"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Foreground" Value="{StaticResource Primary}"/>
-                </Style>
-
-                <Style x:Key="FieldLabel" TargetType="TextBlock">
-                    <Setter Property="FontSize" Value="11"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-                    <Setter Property="Margin" Value="2,10,0,4"/>
-                </Style>
-
-                <!-- Rounded text box -->
-                <Style x:Key="Field" TargetType="TextBox">
-                    <Setter Property="Height" Value="36"/>
-                    <Setter Property="Foreground" Value="{StaticResource Primary}"/>
-                    <Setter Property="Padding" Value="10,0"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="TextBox">
-                                <Border x:Name="bd" Background="White" BorderBrush="#CBD8CF" BorderThickness="1" CornerRadius="10">
-                                    <ScrollViewer x:Name="PART_ContentHost" Padding="{TemplateBinding Padding}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsKeyboardFocused" Value="True">
-                                        <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Primary}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <!-- Rounded wrapper for the date picker -->
-                <Style x:Key="FieldBox" TargetType="Border">
-                    <Setter Property="Background" Value="White"/>
-                    <Setter Property="BorderBrush" Value="#CBD8CF"/>
-                    <Setter Property="BorderThickness" Value="1"/>
-                    <Setter Property="CornerRadius" Value="10"/>
-                    <Setter Property="Height" Value="36"/>
-                    <Setter Property="ClipToBounds" Value="True"/>
-                </Style>
-                <Style TargetType="DatePickerTextBox">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="DatePickerTextBox">
-                                <ScrollViewer x:Name="PART_ContentHost" Background="Transparent" VerticalAlignment="Center"/>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-                <Style TargetType="DatePicker">
-                    <Setter Property="Height" Value="34"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Padding" Value="8,0,4,0"/>
-                    <Setter Property="VerticalAlignment" Value="Center"/>
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Setter Property="Foreground" Value="{StaticResource Primary}"/>
-                </Style>
-
-                <!-- Primary button -->
-                <Style x:Key="PrimaryButton" TargetType="Button">
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="FontSize" Value="14"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Cursor" Value="Hand"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="bd" Background="{StaticResource Primary}" BorderBrush="{StaticResource Gold}"
-                                        BorderThickness="1" CornerRadius="12" Padding="18,11">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="bd" Property="Background" Value="{StaticResource PrimaryHover}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <Style x:Key="IconButton" TargetType="Button">
-                    <Setter Property="Width" Value="30"/>
-                    <Setter Property="Height" Value="30"/>
-                    <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
-                    <Setter Property="FontSize" Value="13"/>
-                    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-                    <Setter Property="Cursor" Value="Hand"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="Button">
-                                <Border x:Name="bd" Background="Transparent" CornerRadius="8">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="bd" Property="Background" Value="#FBE4DC"/>
-                                        <Setter Property="Foreground" Value="#C0392B"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-
-                <!-- Reservations log (DataGrid) -->
-                <Style x:Key="GridHeader" TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-                    <Setter Property="FontSize" Value="11"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="Padding" Value="10,8"/>
-                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                    <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
-                </Style>
-                <Style x:Key="GridRow" TargetType="DataGridRow">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#F3F8F4"/>
-                        </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="#EEF4EF"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-                <Style x:Key="GridCell" TargetType="DataGridCell">
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Padding" Value="10,0"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="Foreground" Value="{StaticResource Primary}"/>
-                    <Style.Triggers>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Foreground" Value="{StaticResource Primary}"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </Grid.Resources>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <!-- Tagline -->
-            <TextBlock Grid.Row="0" Text="Reserve units, record renter details and track payments in one place."
-                       FontSize="13" FontWeight="SemiBold" Foreground="#1E3223" Margin="2,0,0,14"/>
-
-            <!-- Two-column area -->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="65*" MinWidth="480"/>
-                    <ColumnDefinition Width="35*" MinWidth="340"/>
-                </Grid.ColumnDefinitions>
-
-            <!-- ================= LEFT (65%): units + reservations log ================= -->
-            <Grid Grid.Column="0" Margin="0,0,16,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Unit grid -->
-                <Border Grid.Row="0" Style="{StaticResource Card}">
-                    <StackPanel>
-                        <Grid>
-                            <StackPanel>
-                                <TextBlock Text="Units" Style="{StaticResource CardTitle}"/>
-                                <TextBlock Text="Click an available unit to start a reservation." FontSize="12"
-                                           Foreground="{StaticResource Muted}" Margin="0,2,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                <Ellipse Width="9" Height="9" Fill="#27894C" VerticalAlignment="Center"/>
-                                <TextBlock Text="Available" FontSize="11" Foreground="{StaticResource Muted}" Margin="5,0,14,0"/>
-                                <Ellipse Width="9" Height="9" Fill="#B5BDB7" VerticalAlignment="Center"/>
-                                <TextBlock Text="Reserved" FontSize="11" Foreground="{StaticResource Muted}" Margin="5,0,0,0"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <ItemsControl x:Name="ResUnitList" Margin="-4,12,-4,0">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <UniformGrid Columns="5"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="Tile" Margin="4" Height="100" CornerRadius="12" Padding="10,8"
-                                            Background="White" BorderBrush="#D5E0D8" BorderThickness="1.5"
-                                            TextElement.Foreground="#1E3223" Cursor="Hand"
-                                            MouseLeftButtonUp="ResUnit_Click">
-                                        <StackPanel>
-                                            <Grid>
-                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14"/>
-                                                <Ellipse x:Name="Dot" Width="9" Height="9" Fill="#27894C"
-                                                         HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                            </Grid>
-                                            <TextBlock Text="{Binding TypeName}" FontSize="11" Opacity="0.7" Margin="0,2,0,0"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock x:Name="RateText" Text="{Binding RateText}" FontSize="12" FontWeight="SemiBold"
-                                                       Foreground="#B8892A" Margin="0,8,0,0"/>
-                                            <TextBlock x:Name="ReservedText" Text="{Binding ReservedText}" FontSize="10.5"
-                                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="30"
-                                                       Margin="0,6,0,0" Visibility="Collapsed"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <DataTemplate.Triggers>
-                                        <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Tile" Property="BorderBrush" Value="#B8892A"/>
-                                            <Setter TargetName="Tile" Property="Background" Value="#FFFCF3"/>
-                                        </Trigger>
-                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                            <Setter TargetName="Tile" Property="BorderBrush" Value="#1E3223"/>
-                                            <Setter TargetName="Tile" Property="Background" Value="#EEF4EF"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsReserved}" Value="True">
-                                            <Setter TargetName="Tile" Property="Background" Value="#EEF0EE"/>
-                                            <Setter TargetName="Tile" Property="BorderBrush" Value="#DCE0DC"/>
-                                            <Setter TargetName="Tile" Property="TextElement.Foreground" Value="#8B968F"/>
-                                            <Setter TargetName="Tile" Property="IsHitTestVisible" Value="False"/>
-                                            <Setter TargetName="Dot" Property="Fill" Value="#B5BDB7"/>
-                                            <Setter TargetName="RateText" Property="Visibility" Value="Collapsed"/>
-                                            <Setter TargetName="ReservedText" Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-
-                <!-- Reservations log -->
-                <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,16,0,0" Padding="20,18,20,10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0">
-                            <TextBlock Text="Reservations" Style="{StaticResource CardTitle}"/>
-                            <TextBlock x:Name="ResLogCountText" FontSize="12" Foreground="{StaticResource Muted}"
-                                       HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                        </Grid>
-
-                        <DataGrid x:Name="ResBookingGrid" Grid.Row="1" Margin="0,10,0,0"
-                                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                                  CanUserResizeRows="False" CanUserResizeColumns="False" CanUserSortColumns="False"
-                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal"
-                                  HorizontalGridLinesBrush="{StaticResource Line}"
-                                  BorderThickness="0" Background="Transparent" RowBackground="Transparent"
-                                  RowHeight="52" MinHeight="90" SelectionMode="Single" SelectionUnit="FullRow"
-                                  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                                  ColumnHeaderStyle="{StaticResource GridHeader}"
-                                  RowStyle="{StaticResource GridRow}"
-                                  CellStyle="{StaticResource GridCell}">
-                            <DataGrid.Columns>
-
-                                <DataGridTemplateColumn Header="RENTER" Width="*" MinWidth="150">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding RenterName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding RenterSub}" FontSize="11" Foreground="#6B7A70" TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="UNIT" Width="105">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding UnitText}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{Binding UnitType}" FontSize="11" Foreground="#6B7A70"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="MOVE-IN / TERM" Width="120">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding MoveInText}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="{Binding TermText}" FontSize="11" Foreground="#6B7A70"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="TOTAL RENT" Width="110">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding TotalText}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="DOWNPAYMENT" Width="120">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DownText}" FontWeight="SemiBold" Foreground="#7A5A12"/>
-                                                <TextBlock Text="20% received" FontSize="11" Foreground="#6B7A70"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                                <DataGridTemplateColumn Header="" Width="48">
-                                    <DataGridTemplateColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <Button Content="&#xE74D;" Style="{StaticResource IconButton}"
-                                                    ToolTip="Cancel reservation" Click="ResCancelRow_Click"/>
-                                        </DataTemplate>
-                                    </DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <TextBlock x:Name="ResEmptyText" Grid.Row="1" Text="No reservations yet." HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" Foreground="{StaticResource Muted}" Visibility="Collapsed"/>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <!-- ================= RIGHT (35%): New Reservation form ================= -->
-            <Border Grid.Column="1" Style="{StaticResource Card}" Padding="20,16,12,16">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="0,0,8,0">
-                        <TextBlock Text="New Reservation" Style="{StaticResource CardTitle}"/>
-
-                        <!-- Selected unit -->
-                        <Border Background="#F1F6F2" CornerRadius="10" Padding="12,9" Margin="0,10,0,0">
-                            <TextBlock x:Name="ResSelectedUnitText" FontWeight="SemiBold" FontSize="12.5"
-                                       Foreground="{StaticResource Primary}" TextWrapping="Wrap"/>
-                        </Border>
-
-                        <TextBlock Text="Full name" Style="{StaticResource FieldLabel}"/>
-                        <TextBox x:Name="ResNameBox" Style="{StaticResource Field}"/>
-
-                        <TextBlock Text="Contact number" Style="{StaticResource FieldLabel}"/>
-                        <TextBox x:Name="ResPhoneBox" Style="{StaticResource Field}"/>
-
-                        <TextBlock Text="Email" Style="{StaticResource FieldLabel}"/>
-                        <TextBox x:Name="ResEmailBox" Style="{StaticResource Field}"/>
-
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="110"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Move-in date" Style="{StaticResource FieldLabel}"/>
-                                <Border Style="{StaticResource FieldBox}">
-                                    <DatePicker x:Name="ResMoveInPicker"/>
-                                </Border>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Duration (months)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox x:Name="ResDurationBox" Style="{StaticResource Field}"
-                                         PreviewTextInput="ResDuration_PreviewTextInput" TextChanged="ResDuration_TextChanged"/>
-                            </StackPanel>
-                        </Grid>
-
-                        <!-- Rent summary -->
-                        <Border Background="#F1F6F2" CornerRadius="10" Padding="14,10" Margin="0,14,0,0">
-                            <StackPanel>
-                                <Grid>
-                                    <TextBlock Text="Monthly rate" FontSize="12" Foreground="{StaticResource Muted}"/>
-                                    <TextBlock x:Name="ResSumRate" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                                </Grid>
-                                <Grid Margin="0,5,0,0">
-                                    <TextBlock Text="Total rent (rate × months)" FontSize="12" Foreground="{StaticResource Muted}"/>
-                                    <TextBlock x:Name="ResSumTotal" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                                </Grid>
-                                <Border Height="1" Background="#D5E3D9" Margin="0,8"/>
-                                <Grid>
-                                    <TextBlock Text="Downpayment (20%)" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource Primary}"/>
-                                    <TextBlock x:Name="ResSumDown" FontSize="16" FontWeight="Bold" Foreground="{StaticResource Gold}"
-                                               HorizontalAlignment="Right"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Downpayment callout -->
-                        <Border Background="{StaticResource GoldSoft}" BorderBrush="#E8D49A" BorderThickness="1"
-                                CornerRadius="10" Padding="12,9" Margin="0,10,0,0">
-                            <TextBlock x:Name="ResBannerText" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Brown}" TextWrapping="Wrap"/>
-                        </Border>
-
-                        <TextBlock x:Name="ResFormMessage" FontSize="12" TextWrapping="Wrap" Margin="2,10,0,0"/>
-
-                        <Button Content="Reserve Unit" Style="{StaticResource PrimaryButton}" Margin="0,12,0,0"
-                                Click="ResReserve_Click"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-            </Grid>
-        </Grid>
-
-        <!-- Renters (original page content) -->
-        <Grid x:Name="RentersView" Grid.Row="1">
-        <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- 1. Header -->
-            <RowDefinition Height="Auto"/> <!-- 2. Renter form panel -->
+            <RowDefinition Height="Auto"/> <!-- 2. Renter / Reservation form panel -->
             <RowDefinition Height="*"/>    <!-- 3. Table card (Filters + DataGrid) -->
         </Grid.RowDefinitions>
 
         <!-- 1. Header -->
-        <TextBlock Grid.Row="0" Text="Manage tenant profiles, lease periods, and rent status."
+        <TextBlock Grid.Row="0" Text="Manage tenant profiles, reservations, lease periods, and rent status."
                    Style="{StaticResource PageSubtitle}" FontWeight="SemiBold" Foreground="#1E3223"
                    Margin="0,0,0,16"/>
 
-        <!-- 2. Inline renter form panel + divider -->
+        <!-- 2. Inline form panel + divider -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
             <Border CornerRadius="12" Padding="26,18,26,8">
                 <Border.Background>
@@ -675,16 +252,33 @@
                 </Border.Effect>
 
                 <StackPanel>
-                    <!-- Panel title -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <Border Width="4" Height="30" CornerRadius="2" Background="#D9B45A"
-                                VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Renter Details" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
-                            <TextBlock Text="Add a new renter, or click a row in the table to edit it."
-                                       FontSize="11.5" Foreground="#A9C2B0" Margin="0,2,0,0"/>
+                    <!-- Panel title + entry type switch -->
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                            <Border Width="4" Height="30" CornerRadius="2" Background="#D9B45A"
+                                    VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="PanelTitle" Text="Renter Details" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                                <TextBlock x:Name="PanelSubtitle" Text="Add a new renter, or click a row in the table to edit it."
+                                           FontSize="11.5" Foreground="#A9C2B0" Margin="0,2,0,0"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+
+                        <!-- New Renter | Reservation -->
+                        <Border Grid.Column="1" Background="#26FFFFFF" CornerRadius="9" Padding="3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="rbModeRenter" Content="New Renter" GroupName="EntryMode" IsChecked="True"
+                                             Style="{StaticResource ModeTab}" Checked="Mode_Checked"/>
+                                <RadioButton x:Name="rbModeReservation" Content="Reservation" GroupName="EntryMode"
+                                             Style="{StaticResource ModeTab}" Checked="Mode_Checked"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -742,7 +336,8 @@
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Assigned Property" Style="{StaticResource FormLabel}"/>
                                     <Border Style="{StaticResource FormBox}">
-                                        <ComboBox x:Name="UnitCombo" Style="{StaticResource FormCombo}"/>
+                                        <ComboBox x:Name="UnitCombo" Style="{StaticResource FormCombo}"
+                                                  SelectionChanged="UnitCombo_SelectionChanged"/>
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
@@ -754,7 +349,7 @@
                             </Grid>
 
                             <StackPanel Margin="0,0,0,8">
-                                <TextBlock Text="Lease Term" Style="{StaticResource FormLabel}"/>
+                                <TextBlock x:Name="TermLabel" Text="Lease Term" Style="{StaticResource FormLabel}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -762,19 +357,19 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Border Grid.Column="0" Style="{StaticResource FormBox}">
-                                        <DatePicker x:Name="StartPicker"/>
+                                        <DatePicker x:Name="StartPicker" SelectedDateChanged="Date_Changed"/>
                                     </Border>
                                     <TextBlock Grid.Column="1" Text="to" Foreground="#CFE0D3" FontWeight="SemiBold"
                                                VerticalAlignment="Center" Margin="12,0"/>
                                     <Border Grid.Column="2" Style="{StaticResource FormBox}">
-                                        <DatePicker x:Name="EndPicker"/>
+                                        <DatePicker x:Name="EndPicker" SelectedDateChanged="Date_Changed"/>
                                     </Border>
                                 </Grid>
                             </StackPanel>
 
                             <StackPanel Margin="0,0,0,8">
-                                <TextBlock Text="Monthly Rent (&#x20B1;)" Style="{StaticResource FormLabel}"/>
-                                <TextBox x:Name="RentBox" Style="{StaticResource FormInput}"/>
+                                <TextBlock x:Name="RentLabel" Text="Monthly Rent (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="RentBox" Style="{StaticResource FormInput}" TextChanged="Rent_TextChanged"/>
                             </StackPanel>
                         </StackPanel>
 
@@ -803,14 +398,37 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="Delete Renter" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DeleteText" Text="Delete Renter" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
-                            <TextBlock Text="Delete removes the renter selected in the table."
+                            <TextBlock Text="Delete removes the record selected in the table."
                                        FontSize="11" Foreground="#A9C2B0" TextWrapping="Wrap" Margin="2,2,0,0"/>
                         </StackPanel>
                     </Grid>
+
+                    <!-- Reservation only: total rent and the 20% downpayment -->
+                    <Border x:Name="ReservationStrip" Visibility="Collapsed" Margin="0,4,0,8" Padding="14,9"
+                            Background="#1FD9B45A" BorderBrush="#4DD9B45A" BorderThickness="1" CornerRadius="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock x:Name="ResTotalText" FontSize="12.5" FontWeight="SemiBold"
+                                           Foreground="#F0E2B0" TextWrapping="Wrap"/>
+                                <TextBlock Text="A 20% downpayment is required to reserve the unit."
+                                           FontSize="11" Foreground="#A9C2B0" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                <TextBlock Text="Downpayment (20%)" FontSize="12" Foreground="#CFE0D3"
+                                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock x:Name="ResDownText" FontSize="18" FontWeight="Bold" Foreground="#D9B45A"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
                     <TextBlock x:Name="FormMessage" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"
                                Margin="2,4,0,10" Visibility="Collapsed"/>
@@ -821,7 +439,7 @@
             <Border Height="1" Background="#C5D4C9" Margin="0,16,0,0"/>
         </StackPanel>
 
-        <!-- 3. Main Renters Card (Filters + DataGrid) -->
+        <!-- 3. One table for renters AND reservations -->
         <Border Grid.Row="2" Style="{StaticResource Card}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -837,15 +455,17 @@
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="rbPending" Content="Pending" Tag="Pending"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
+                    <RadioButton x:Name="rbReservations" Content="Reservations" Tag="Reservation"
+                                 Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="rbPast" Content="Past" Tag="Past"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                 </StackPanel>
 
-                <!-- Renters Table -->
+                <!-- Renters + Reservations Table -->
                 <DataGrid Grid.Row="1" x:Name="dgRenters" Style="{StaticResource AppDataGrid}"
                           SelectionChanged="Renters_SelectionChanged">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="RENTER" Width="230">
+                        <DataGridTemplateColumn Header="RENTER" Width="210">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -858,10 +478,43 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="100"/>
-                        <DataGridTextColumn Header="CONTACT" Binding="{Binding Contact}" Width="150"/>
+
+                        <!-- Renter or Reservation -->
+                        <DataGridTemplateColumn Header="TYPE" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="badge" CornerRadius="10" Padding="10,3" Background="#E4EEE6"
+                                            HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <TextBlock x:Name="lbl" Text="{Binding TypeText}" FontSize="11.5" FontWeight="SemiBold"
+                                                   Foreground="#2F5C3E"/>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsReservation}" Value="True">
+                                            <Setter TargetName="badge" Property="Background" Value="#FBF3DC"/>
+                                            <Setter TargetName="lbl" Property="Foreground" Value="#7A5A12"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="UNIT" Binding="{Binding Unit}" Width="90"/>
+                        <DataGridTextColumn Header="CONTACT" Binding="{Binding Contact}" Width="140"/>
                         <DataGridTextColumn Header="LEASE PERIOD" Binding="{Binding LeasePeriod}" Width="*"/>
-                        <DataGridTextColumn Header="MONTHLY RENT" Binding="{Binding RentText}" Width="130"/>
+
+                        <!-- Reservations also show their 20% downpayment under the rent -->
+                        <DataGridTemplateColumn Header="MONTHLY RENT" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding RentText}"/>
+                                        <TextBlock Text="{Binding DownText}" FontSize="11" Foreground="#7A5A12"
+                                                   Visibility="{Binding IsReservation, Converter={StaticResource B2V}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
                         <DataGridTemplateColumn Header="STATUS" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -885,6 +538,5 @@
                 </DataGrid>
             </Grid>
         </Border>
-        </Grid>
     </Grid>
 </UserControl>

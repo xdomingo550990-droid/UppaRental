@@ -56,20 +56,32 @@ namespace RentalManagementSystem.Presentation
             {
                 nameof(btnOverview) => new OverviewPage(),
                 nameof(btnProperties) => new UnitsPage(),
-                nameof(btnRenters) => new RentersPage(),      // Reservations now lives inside this page
+                nameof(btnRenters) => new RentersPage(),      // Renters + Reservations share this page
                 nameof(btnBilling) => new BillingPage(),
                 nameof(btnSettings) => new ProfilePage(),    // profile card at the bottom of the sidebar
                 _ => MainContentFrame.Content
             };
         }
 
-        // Sends what you type in the top search bar to the Overview page
+        // Sends what you type in the top search bar to the page that is open
         private void Search_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (MainContentFrame == null) return;
 
-            if (MainContentFrame.Content is OverviewPage overview)
-                overview.SetSearch(txtSearch.Text);
+            string query = txtSearch.Text;
+
+            switch (MainContentFrame.Content)
+            {
+                case OverviewPage overview:
+                    overview.SetSearch(query);
+                    break;
+                case RentersPage renters:      // renters + reservations table
+                    renters.ApplyGlobalSearch(query);
+                    break;
+                case BillingPage billing:      // invoices table
+                    billing.ApplyGlobalSearch(query);
+                    break;
+            }
         }
 
         private void LogOutButton_Click(object sender, RoutedEventArgs e)

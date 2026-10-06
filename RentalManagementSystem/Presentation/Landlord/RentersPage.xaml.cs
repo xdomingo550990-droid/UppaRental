@@ -7,13 +7,16 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace RentalManagementSystem.Presentation
 {
+    /// <summary>One row in the table: either a renter (lease) or a reservation.</summary>
     public class RenterRow
     {
+        public const decimal DownRate = 0.20m;
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
         public string Name { get; set; } = "";
         public string Unit { get; set; } = "";
         public string Contact { get; set; } = "";
@@ -24,93 +27,49 @@ namespace RentalManagementSystem.Presentation
         public decimal MonthlyRent { get; set; }
         public string Status { get; set; } = "Active";   // Active, Pending, Past
 
-        public string Initial => string.IsNullOrEmpty(Name) ? "?" : Name.Substring(0, 1).ToUpper();
-        public string LeasePeriod => $"{LeaseStart} – {LeaseEnd}";
-        public string RentText => "₱" + MonthlyRent.ToString("N0", CultureInfo.InvariantCulture);
-    }
+        /// <summary>True when this row is a reservation (Pending until the renter moves in).</summary>
+        public bool IsReservation { get; set; }
 
-#nullable disable
-    /// <summary>One unit tile in the grid. Changing ReservedBy / IsSelected updates the screen instantly.</summary>
-    public class ResUnitTile : INotifyPropertyChanged
-    {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public ResUnitTile(string code, string typeName, decimal monthlyRate)
-        {
-            Code = code; TypeName = typeName; MonthlyRate = monthlyRate;
-        }
-
-        public string Code { get; }
-        public string TypeName { get; }
-        public decimal MonthlyRate { get; }
-
-        private string _reservedBy;
-        private bool _isSelected;
-
-        public string ReservedBy
-        {
-            get => _reservedBy;
-            set
-            {
-                _reservedBy = value;
-                Raise(nameof(ReservedBy)); Raise(nameof(IsReserved)); Raise(nameof(ReservedText));
-            }
-        }
-
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set { _isSelected = value; Raise(nameof(IsSelected)); }
-        }
-
-        public bool IsReserved => !string.IsNullOrEmpty(ReservedBy);
-        public string Title => $"Unit {Code}";
-        public string RateText => $"{ResBooking.Peso}{MonthlyRate.ToString("N0", ResBooking.Us)}/mo";
-        public string ReservedText => $"Reserved by: {ReservedBy}";
-
-        private void Raise(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
-
-    /// <summary>One saved reservation (a row in the log).</summary>
-    public class ResBooking
-    {
-        public const string Peso = "\u20B1";
-        public const decimal DownRate = 0.20m;
-        public static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
-
-        public string Id { get; set; } = "";
-        public string RenterName { get; set; } = "";
-        public string Phone { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string UnitCode { get; set; } = "";
-        public string UnitType { get; set; } = "";
-        public decimal MonthlyRate { get; set; }
-        public DateTime MoveIn { get; set; }
+        /// <summary>Length of the lease in months (drives the reservation total and downpayment).</summary>
         public int Months { get; set; }
 
-        // calculated
-        public decimal TotalRent => MonthlyRate * Months;
+        public string Initial => string.IsNullOrEmpty(Name) ? "?" : Name.Substring(0, 1).ToUpper();
+        public string LeasePeriod => $"{LeaseStart} – {LeaseEnd}";
+        public string RentText => "₱" + MonthlyRent.ToString("N0", Inv);
+
+        // ---- reservation calculation: rent × months, 20% downpayment ----
+        public decimal TotalRent => MonthlyRent * Months;
         public decimal Downpayment => Math.Round(TotalRent * DownRate, 2);
+        public string TypeText => IsReservation ? "Reservation" : "Renter";
+        public string DownText => IsReservation ? $"20% down: {Money(Downpayment)}" : "";
 
-        // shown in the log
-        public string UnitText => $"Unit {UnitCode}";
-        public string RenterSub => $"{Id} \u00B7 {Phone}";
-        public string MoveInText => MoveIn.ToString("MMM d, yyyy", Us);
-        public string TermText => Months == 1 ? "1 month" : $"{Months} months";
-        public string TotalText => Money(TotalRent);
-        public string DownText => Money(Downpayment);
+        public static string Money(decimal v) => "₱" + v.ToString("N2", Inv);
 
-        public static string Money(decimal v) => Peso + v.ToString("N2", Us);
+        /// <summary>Whole months covered from start to end (inclusive). Jan 15 – Jul 14 = 6.</summary>
+        public static int MonthsBetween(DateTime start, DateTime end)
+        {
+            DateTime stop = end.Date.AddDays(1);
+            int m = (stop.Year - start.Year) * 12 + stop.Month - start.Month;
+            if (start.Date.AddMonths(m) > stop) m--;
+            return Math.Max(m, 0);
+        }
     }
-#nullable restore
 
     public partial class RentersPage : UserControl
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const string DateFormat = "MMM dd, yyyy";
 
-        private readonly string[] _units =
-            { "Unit 101", "Unit 102", "Unit 105", "Unit 201", "Unit 202", "Unit 203", "Unit 204", "Unit 301", "Unit 302", "Unit 401" };
+        // Monthly rate of every unit. Used to pre-fill the rent when you reserve a unit.
+        // TODO: load these from your DAO / Service (same source as the Properties page).
+        private static readonly Dictionary<string, decimal> UnitRates = new()
+        {
+            ["Unit 101"] = 10000m, ["Unit 102"] = 10000m, ["Unit 105"] = 12500m,
+            ["Unit 201"] = 15000m, ["Unit 202"] = 15000m,
+            ["Unit 203"] = 20000m, ["Unit 204"] = 20000m,
+            ["Unit 301"] = 25000m, ["Unit 302"] = 25000m,
+            ["Unit 401"] = 30000m, ["Unit 402"] = 30000m,
+        };
         private readonly string[] _statuses = { "Active", "Pending", "Past" };
 
         private readonly ObservableCollection<RenterRow> _renters = new ObservableCollection<RenterRow>
@@ -128,12 +87,19 @@ namespace RentalManagementSystem.Presentation
         private string _statusFilter = "All";
         private string _globalSearchQuery = "";
 
+        private bool _ready;       // false while the page is still being built
+        private int _suspend;      // > 0 while code (not the user) is filling the form
+
+        private bool IsReservationMode => rbModeReservation.IsChecked == true;
+
         public RentersPage()
         {
             InitializeComponent();
 
-            UnitCombo.ItemsSource = _units;
+            UnitCombo.ItemsSource = UnitRates.Keys.OrderBy(k => k).ToList();
             StatusCombo.ItemsSource = _statuses;
+
+            SeedSampleReservations();
 
             _view = CollectionViewSource.GetDefaultView(_renters);
             _view.Filter = Matches;
@@ -142,22 +108,32 @@ namespace RentalManagementSystem.Presentation
             ClearForm();
             UpdateSummary();
 
-            InitReservations();
+            _ready = true;
+            ApplyMode();
         }
 
-        // ---------- Tabs: Renters | Reservations ----------
-
-        private void Tab_Checked(object sender, RoutedEventArgs e)
+        // Sample reservations (delete once your DAO supplies real ones)
+        private void SeedSampleReservations()
         {
-            // Fires once during InitializeComponent, before the views exist.
-            if (RentersView == null || ReservationsView == null) return;
-
-            bool showRenters = tabRenters.IsChecked == true;
-            RentersView.Visibility = showRenters ? Visibility.Visible : Visibility.Collapsed;
-            ReservationsView.Visibility = showRenters ? Visibility.Collapsed : Visibility.Visible;
+            AddSampleReservation("Paolo Ramirez", "0917 808 9090", "paolo.r@email.com", "Unit 102",  3,  6);
+            AddSampleReservation("Grace Tan",     "0918 555 0142", "grace.t@email.com", "Unit 302", 10, 12);
+            AddSampleReservation("Daniel Cruz",   "0917 123 8801", "daniel.c@email.com", "Unit 401", 20,  6);
         }
 
-        // ---------- Global Search Hook ----------
+        private void AddSampleReservation(string name, string phone, string email, string unit, int moveInDays, int months)
+        {
+            DateTime start = DateTime.Today.AddDays(moveInDays);
+            _renters.Add(new RenterRow
+            {
+                Name = name, Contact = phone, Email = email, Unit = unit,
+                LeaseStart = start.ToString(DateFormat, Inv),
+                LeaseEnd = start.AddMonths(months).AddDays(-1).ToString(DateFormat, Inv),
+                MonthlyRent = UnitRates[unit], Months = months,
+                Status = "Pending", IsReservation = true
+            });
+        }
+
+        // ---------- Global Search Hook (called by DashboardPage's top search bar) ----------
 
         public void ApplyGlobalSearch(string query)
         {
@@ -171,13 +147,17 @@ namespace RentalManagementSystem.Presentation
         {
             var r = (RenterRow)item;
 
-            if (_statusFilter != "All" && r.Status != _statusFilter) return false;
+            if (_statusFilter == "Reservation") { if (!r.IsReservation) return false; }
+            else if (_statusFilter != "All" && r.Status != _statusFilter) return false;
 
             if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
 
             return r.Name.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
                 || r.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || r.Contact.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+                || r.Contact.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || r.Email.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || r.Status.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
+                || r.TypeText.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
@@ -190,21 +170,121 @@ namespace RentalManagementSystem.Presentation
 
         private void UpdateSummary()
         {
-            int total = _renters.Count;
-            int active = _renters.Count(r => r.Status == "Active");
-            int pending = _renters.Count(r => r.Status == "Pending");
-            int past = _renters.Count(r => r.Status == "Past");
-
-            rbAll.Content = $"All ({total})";
-            rbActive.Content = $"Active ({active})";
-            rbPending.Content = $"Pending ({pending})";
-            rbPast.Content = $"Past ({past})";
+            rbAll.Content = $"All ({_renters.Count})";
+            rbActive.Content = $"Active ({_renters.Count(r => r.Status == "Active")})";
+            rbPending.Content = $"Pending ({_renters.Count(r => r.Status == "Pending")})";
+            rbReservations.Content = $"Reservations ({_renters.Count(r => r.IsReservation)})";
+            rbPast.Content = $"Past ({_renters.Count(r => r.Status == "Past")})";
         }
+
+        // ---------- Entry type: New Renter | Reservation ----------
+
+        private void Mode_Checked(object sender, RoutedEventArgs e)
+        {
+            if (!_ready || _suspend > 0) return;
+
+            bool res = IsReservationMode;
+
+            if (_editing == null)
+            {
+                // Brand-new entry: switch the defaults to suit the chosen type
+                _suspend++;
+                try
+                {
+                    StatusCombo.SelectedItem = res ? "Pending" : "Active";
+                    if (StartPicker.SelectedDate is DateTime s) EndPicker.SelectedDate = DefaultEnd(s);
+                    if (res && UnitCombo.SelectedItem is string u && UnitRates.TryGetValue(u, out decimal rate))
+                        RentBox.Text = rate.ToString("0.##", Inv);
+                }
+                finally { _suspend--; }
+            }
+            else if (!res && _editing.IsReservation && (StatusCombo.SelectedItem as string) == "Pending")
+            {
+                // Editing a reservation and switching to "New Renter" = the renter moved in
+                StatusCombo.SelectedItem = "Active";
+            }
+
+            ApplyMode();
+        }
+
+        /// <summary>Updates every label and button that depends on renter / reservation / editing.</summary>
+        private void ApplyMode()
+        {
+            bool res = IsReservationMode;
+            bool edit = _editing != null;
+
+            PanelTitle.Text = res ? "Reservation Details" : "Renter Details";
+            PanelSubtitle.Text = res
+                ? (edit ? "Editing a reservation. Switch to New Renter once the tenant moves in."
+                        : "Reserve a unit. A 20% downpayment secures it until move-in.")
+                : (edit ? "Editing a renter. Click Clear Fields to add a new one."
+                        : "Add a new renter, or click a row in the table to edit it.");
+
+            SaveText.Text = (edit ? "Update " : "Save ") + (res ? "Reservation" : "Renter");
+            DeleteText.Text = res ? "Cancel Reservation" : "Delete Renter";
+            TermLabel.Text = res ? "Move-in & End Date" : "Lease Term";
+            RentLabel.Text = res ? "Monthly Rate (\u20B1)" : "Monthly Rent (\u20B1)";
+            ReservationStrip.Visibility = res ? Visibility.Visible : Visibility.Collapsed;
+
+            UpdateReservationSummary();
+        }
+
+        private static DateTime DefaultEnd(DateTime start, bool reservation) =>
+            reservation ? start.AddMonths(6).AddDays(-1) : start.AddYears(1).AddDays(-1);
+
+        private DateTime DefaultEnd(DateTime start) => DefaultEnd(start, IsReservationMode);
+
+        // ---------- Live reservation calculation ----------
+        // Reservation: total rent = monthly rate × months, downpayment = 20% of the total.
+
+        private void UnitCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_ready || _suspend > 0) return;
+
+            // For reservations the rent follows the unit's monthly rate
+            if (IsReservationMode && UnitCombo.SelectedItem is string u && UnitRates.TryGetValue(u, out decimal rate))
+                RentBox.Text = rate.ToString("0.##", Inv);
+
+            UpdateReservationSummary();
+        }
+
+        private void Rent_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_ready) UpdateReservationSummary();
+        }
+
+        private void Date_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            if (_ready) UpdateReservationSummary();
+        }
+
+        private void UpdateReservationSummary()
+        {
+            if (ReservationStrip == null || !IsReservationMode) return;
+
+            decimal rate = TryParseRent(RentBox.Text, out decimal r) ? r : 0m;
+            int months = 0;
+            if (StartPicker.SelectedDate is DateTime s && EndPicker.SelectedDate is DateTime en && en > s)
+                months = RenterRow.MonthsBetween(s, en);
+
+            decimal total = rate * months;
+            decimal down = Math.Round(total * RenterRow.DownRate, 2);
+
+            ResTotalText.Text = months < 1
+                ? "Pick the move-in and end dates to compute the total rent."
+                : $"Total rent: {RenterRow.Money(total)}  ({months} {(months == 1 ? "month" : "months")} \u00D7 {RenterRow.Money(rate)})";
+            ResDownText.Text = RenterRow.Money(down);
+        }
+
+        private static bool TryParseRent(string text, out decimal rent) =>
+            decimal.TryParse(text.Replace("₱", "").Replace(",", "").Trim(), NumberStyles.Number, Inv, out rent);
 
         // ---------- Form: save / clear / delete ----------
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
+            bool res = IsReservationMode;
+
             string name = NameBox.Text.Trim();
             string contact = ContactBox.Text.Trim();
             string email = EmailBox.Text.Trim();
@@ -218,19 +298,29 @@ namespace RentalManagementSystem.Presentation
             { ShowMessage("That email address doesn't look right.", true); return; }
             if (unit == null) { ShowMessage("Please choose an assigned unit.", true); return; }
             if (!StartPicker.SelectedDate.HasValue || !EndPicker.SelectedDate.HasValue)
-            { ShowMessage("Please pick the lease start and end dates.", true); return; }
+            { ShowMessage(res ? "Please pick the move-in and end dates." : "Please pick the lease start and end dates.", true); return; }
 
             DateTime start = StartPicker.SelectedDate.Value.Date;
             DateTime end = EndPicker.SelectedDate.Value.Date;
-            if (end <= start) { ShowMessage("The lease end date must be after the start date.", true); return; }
+            if (end <= start) { ShowMessage("The end date must be after the start date.", true); return; }
 
-            string rentText = RentBox.Text.Replace("₱", "").Replace(",", "").Trim();
-            if (!decimal.TryParse(rentText, NumberStyles.Number, Inv, out decimal rent) || rent <= 0)
-            { ShowMessage("Enter a valid monthly rent.", true); return; }
+            if (!TryParseRent(RentBox.Text, out decimal rent) || rent <= 0)
+            { ShowMessage(res ? "Enter a valid monthly rate." : "Enter a valid monthly rent.", true); return; }
 
             if (status == null) { ShowMessage("Please choose a lease status.", true); return; }
 
-            // one unit can't have two current renters
+            int months = RenterRow.MonthsBetween(start, end);
+            bool newReservation = res && (_editing == null || !_editing.IsReservation);
+
+            if (res)
+            {
+                if (newReservation && start < DateTime.Today)
+                { ShowMessage("The move-in date can't be in the past.", true); return; }
+                if (months < 1 || months > 60)
+                { ShowMessage("A reservation must cover 1 to 60 months.", true); return; }
+            }
+
+            // one unit can't have two current renters / reservations
             if (status != "Past")
             {
                 var clash = _renters.FirstOrDefault(r => r != _editing && r.Unit == unit && r.Status != "Past");
@@ -239,6 +329,17 @@ namespace RentalManagementSystem.Presentation
                     ShowMessage($"{unit} is already assigned to {clash.Name}.", true);
                     return;
                 }
+            }
+
+            // a new reservation only counts once the 20% downpayment is received
+            decimal down = Math.Round(rent * months * RenterRow.DownRate, 2);
+            if (newReservation)
+            {
+                var answer = MessageBox.Show(
+                    $"Confirm that the 20% downpayment of {RenterRow.Money(down)} for {unit} " +
+                    $"has been received from {name}?",
+                    "Confirm downpayment", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (answer != MessageBoxResult.Yes) return;
             }
 
             // ---- save ----
@@ -253,7 +354,9 @@ namespace RentalManagementSystem.Presentation
             row.LeaseStart = start.ToString(DateFormat, Inv);
             row.LeaseEnd = end.ToString(DateFormat, Inv);
             row.MonthlyRent = rent;
+            row.Months = months;
             row.Status = status;
+            row.IsReservation = res;
 
             if (!isEdit) _renters.Add(row);
 
@@ -262,7 +365,9 @@ namespace RentalManagementSystem.Presentation
             _view.Refresh();
             UpdateSummary();
             ClearForm();
-            ShowMessage(isEdit ? $"{row.Name} updated." : $"{row.Name} saved.", false);
+
+            if (newReservation) ShowMessage($"{unit} reserved for {row.Name}. Downpayment {RenterRow.Money(down)} recorded.", false);
+            else ShowMessage(isEdit ? $"{row.Name} updated." : $"{row.Name} saved.", false);
         }
 
         private void Clear_Click(object sender, RoutedEventArgs e) => ClearForm();
@@ -272,58 +377,75 @@ namespace RentalManagementSystem.Presentation
             var target = dgRenters.SelectedItem as RenterRow ?? _editing;
             if (target == null)
             {
-                ShowMessage("Select a renter in the table first.", true);
+                ShowMessage("Select a renter or reservation in the table first.", true);
                 return;
             }
 
-            var answer = MessageBox.Show($"Delete {target.Name} ({target.Unit})?", "Delete renter",
-                                         MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var answer = target.IsReservation
+                ? MessageBox.Show($"Cancel the reservation of {target.Name} for {target.Unit}?\nThe unit will become available again.",
+                                  "Cancel reservation", MessageBoxButton.YesNo, MessageBoxImage.Warning)
+                : MessageBox.Show($"Delete {target.Name} ({target.Unit})?", "Delete renter",
+                                  MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes) return;
 
             _renters.Remove(target);
 
-            // TODO: delete `target` through your DAO / Service here
+            // TODO: delete / cancel `target` through your DAO / Service here
 
             UpdateSummary();
             ClearForm();
-            ShowMessage($"{target.Name} deleted.", false);
+            ShowMessage(target.IsReservation ? $"{target.Name}'s reservation was cancelled." : $"{target.Name} deleted.", false);
         }
 
+        /// <summary>Empties the form. Keeps the current type (renter / reservation) so you can add several in a row.</summary>
         private void ClearForm()
         {
-            _editing = null;
-            SaveText.Text = "Save Renter";
+            _suspend++;
+            try
+            {
+                _editing = null;
 
-            NameBox.Text = "";
-            ContactBox.Text = "";
-            EmailBox.Text = "";
-            AddressBox.Text = "";
-            RentBox.Text = "";
-            UnitCombo.SelectedIndex = -1;
-            StatusCombo.SelectedIndex = 0;
-            StartPicker.SelectedDate = DateTime.Today;
-            EndPicker.SelectedDate = DateTime.Today.AddYears(1).AddDays(-1);
+                NameBox.Text = "";
+                ContactBox.Text = "";
+                EmailBox.Text = "";
+                AddressBox.Text = "";
+                RentBox.Text = "";
+                UnitCombo.SelectedIndex = -1;
+                StatusCombo.SelectedItem = IsReservationMode ? "Pending" : "Active";
+                StartPicker.SelectedDate = DateTime.Today;
+                EndPicker.SelectedDate = DefaultEnd(DateTime.Today);
+            }
+            finally { _suspend--; }
 
             dgRenters.UnselectAll();
             FormMessage.Visibility = Visibility.Collapsed;
+            ApplyMode();
         }
 
         private void LoadForEdit(RenterRow r)
         {
-            _editing = r;
-            SaveText.Text = "Update Renter";
+            _suspend++;
+            try
+            {
+                _editing = r;
 
-            NameBox.Text = r.Name;
-            ContactBox.Text = r.Contact;
-            EmailBox.Text = r.Email;
-            AddressBox.Text = r.Address;
-            UnitCombo.SelectedItem = r.Unit;
-            StartPicker.SelectedDate = ParseDate(r.LeaseStart);
-            EndPicker.SelectedDate = ParseDate(r.LeaseEnd);
-            RentBox.Text = r.MonthlyRent.ToString("0.##", Inv);
-            StatusCombo.SelectedItem = r.Status;
+                if (r.IsReservation) rbModeReservation.IsChecked = true;
+                else rbModeRenter.IsChecked = true;
+
+                NameBox.Text = r.Name;
+                ContactBox.Text = r.Contact;
+                EmailBox.Text = r.Email;
+                AddressBox.Text = r.Address;
+                UnitCombo.SelectedItem = r.Unit;
+                StartPicker.SelectedDate = ParseDate(r.LeaseStart);
+                EndPicker.SelectedDate = ParseDate(r.LeaseEnd);
+                RentBox.Text = r.MonthlyRent.ToString("0.##", Inv);
+                StatusCombo.SelectedItem = r.Status;
+            }
+            finally { _suspend--; }
 
             FormMessage.Visibility = Visibility.Collapsed;
+            ApplyMode();
         }
 
         private static DateTime? ParseDate(string text) =>
@@ -338,7 +460,7 @@ namespace RentalManagementSystem.Presentation
 
         // ---------- Table interaction ----------
 
-        // Clicking a row loads that renter into the form so it can be edited or deleted
+        // Clicking a row loads that renter / reservation into the form so it can be edited or deleted
         private void Renters_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (dgRenters.SelectedItem is RenterRow r) LoadForEdit(r);
@@ -346,8 +468,15 @@ namespace RentalManagementSystem.Presentation
 
         private void View_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is RenterRow r)
-                MessageBox.Show($"{r.Name}\n{r.Unit}\n{r.Contact}\n{r.Email}\n{r.Address}\nLease: {r.LeasePeriod}", "Renter details");
+            if (((FrameworkElement)sender).DataContext is not RenterRow r) return;
+
+            string extra = r.IsReservation
+                ? $"\nTotal rent: {RenterRow.Money(r.TotalRent)} ({r.Months} months)\nDownpayment (20%): {RenterRow.Money(r.Downpayment)}"
+                : "";
+
+            MessageBox.Show(
+                $"{r.Name}  ·  {r.TypeText}\n{r.Unit}\n{r.Contact}\n{r.Email}\n{r.Address}\nLease: {r.LeasePeriod}{extra}",
+                r.IsReservation ? "Reservation details" : "Renter details");
         }
 
         private void Edit_Click(object sender, RoutedEventArgs e)
@@ -358,230 +487,5 @@ namespace RentalManagementSystem.Presentation
                 NameBox.Focus();
             }
         }
-
-        // =====================================================================
-        //  RESERVATIONS (merged from the old ReservationsPage)
-        //  Simple in-memory data; later move it to your DAO / Service layer.
-        // =====================================================================
-#nullable disable
-        private readonly List<ResUnitTile> _unitTiles = new()
-        {
-            new ResUnitTile("101", "Studio",       10000m),
-            new ResUnitTile("102", "Studio",       10000m),
-            new ResUnitTile("201", "1-Bedroom",    15000m),
-            new ResUnitTile("202", "1-Bedroom",    15000m),
-            new ResUnitTile("203", "2-Bedroom",    20000m),
-            new ResUnitTile("204", "2-Bedroom",    20000m),
-            new ResUnitTile("301", "Family Suite", 25000m),
-            new ResUnitTile("302", "Family Suite", 25000m),
-            new ResUnitTile("401", "Penthouse",    30000m),
-            new ResUnitTile("402", "Penthouse",    30000m),
-        };
-
-        private readonly ObservableCollection<ResBooking> _bookings = new();
-        private ResUnitTile _selectedTile;
-        private int _nextBookingId = 1001;
-        private bool _resReady;
-
-        private void InitReservations()
-        {
-            ResUnitList.ItemsSource = _unitTiles;
-            ResBookingGrid.ItemsSource = _bookings;
-
-            SeedSampleData();
-            ResetResForm();
-
-            _resReady = true;
-            UpdateResSummary();
-            UpdateLog();
-        }
-
-        // -----------------------------------------------------------------
-        //  Sample data (delete this once your DAO supplies real reservations)
-        // -----------------------------------------------------------------
-        private void SeedSampleData()
-        {
-            Seed("Maria Santos",    "+63 917 123 4567", "maria.santos@email.com", "101",  3,  6);
-            Seed("Juan Dela Cruz",  "+63 918 555 0142", "juan.dc@email.com",      "203", 10, 12);
-            Seed("Mark Villanueva", "+63 917 808 9090", "mark.v@email.com",       "401", 20, 12);
-        }
-
-        private void Seed(string name, string phone, string email, string unitCode, int moveInDays, int months)
-        {
-            var unit = _unitTiles.First(u => u.Code == unitCode);
-            _bookings.Add(new ResBooking
-            {
-                Id = "R-" + _nextBookingId++,
-                RenterName = name, Phone = phone, Email = email,
-                UnitCode = unit.Code, UnitType = unit.TypeName, MonthlyRate = unit.MonthlyRate,
-                MoveIn = DateTime.Today.AddDays(moveInDays), Months = months
-            });
-            unit.ReservedBy = name;
-        }
-
-        // -----------------------------------------------------------------
-        //  Unit grid: only available units can be clicked
-        // -----------------------------------------------------------------
-        private void ResUnit_Click(object sender, MouseButtonEventArgs e)
-        {
-            var tile = (sender as FrameworkElement)?.DataContext as ResUnitTile;
-            if (tile == null || tile.IsReserved) return;
-
-            if (_selectedTile == tile)                       // click again = unselect
-            {
-                tile.IsSelected = false;
-                _selectedTile = null;
-            }
-            else
-            {
-                if (_selectedTile != null) _selectedTile.IsSelected = false;
-                tile.IsSelected = true;
-                _selectedTile = tile;
-            }
-
-            ResFormMessage.Text = "";
-            UpdateResSummary();
-        }
-
-        // -----------------------------------------------------------------
-        //  Live calculation: total rent and 20% downpayment
-        // -----------------------------------------------------------------
-        private void ResDuration_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
-            e.Handled = !e.Text.All(char.IsDigit);                  // numbers only
-
-        private void ResDuration_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (_resReady) UpdateResSummary();
-        }
-
-        private int ParseMonths() => int.TryParse(ResDurationBox.Text.Trim(), out int m) ? m : 0;
-
-        private void UpdateResSummary()
-        {
-            int months = Math.Max(0, ParseMonths());
-            decimal rate = _selectedTile?.MonthlyRate ?? 0m;
-            decimal total = rate * months;
-            decimal down = Math.Round(total * ResBooking.DownRate, 2);
-
-            ResSumRate.Text = _selectedTile == null ? "\u2014" : ResBooking.Money(rate) + " / month";
-            ResSumTotal.Text = ResBooking.Money(total);
-            ResSumDown.Text = ResBooking.Money(down);
-
-            if (_selectedTile == null)
-            {
-                ResSelectedUnitText.Text = "No unit selected \u2013 click an available unit on the left.";
-                ResBannerText.Text = "Select an available unit to see the required 20% downpayment.";
-            }
-            else
-            {
-                ResSelectedUnitText.Text = $"{_selectedTile.Title} \u00B7 {_selectedTile.TypeName} \u00B7 {_selectedTile.RateText}";
-                ResBannerText.Text = months < 1
-                    ? "Enter the rental duration (in months) to compute the downpayment."
-                    : $"To reserve this unit, an initial 20% downpayment of {ResBooking.Money(down)} is required.";
-            }
-        }
-
-        // -----------------------------------------------------------------
-        //  Reserve Unit
-        // -----------------------------------------------------------------
-        private void ResReserve_Click(object sender, RoutedEventArgs e)
-        {
-            string name = ResNameBox.Text.Trim();
-            string phone = ResPhoneBox.Text.Trim();
-            string email = ResEmailBox.Text.Trim();
-            int months = ParseMonths();
-
-            // ---- validation ----
-            if (_selectedTile == null) { ShowResMessage("Please click an available unit first.", true); return; }
-            if (name.Length == 0) { ShowResMessage("Please enter the renter's full name.", true); return; }
-            if (phone.Length == 0) { ShowResMessage("Please enter a contact number.", true); return; }
-            if (email.Length > 0 && (!email.Contains("@") || !email.Contains(".")))
-            { ShowResMessage("That email address doesn't look right.", true); return; }
-            if (!ResMoveInPicker.SelectedDate.HasValue) { ShowResMessage("Please pick a move-in date.", true); return; }
-            if (ResMoveInPicker.SelectedDate.Value.Date < DateTime.Today)
-            { ShowResMessage("The move-in date can't be in the past.", true); return; }
-            if (months < 1 || months > 60) { ShowResMessage("Duration must be between 1 and 60 months.", true); return; }
-
-            var unit = _selectedTile;
-            decimal total = unit.MonthlyRate * months;
-            decimal down = Math.Round(total * ResBooking.DownRate, 2);
-
-            // The unit is only blocked once the 20% downpayment is received
-            var answer = MessageBox.Show(
-                $"Confirm that the 20% downpayment of {ResBooking.Money(down)} for {unit.Title} " +
-                $"has been received from {name}?",
-                "Confirm downpayment", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (answer != MessageBoxResult.Yes) return;
-
-            // ---- save ----
-            var booking = new ResBooking
-            {
-                Id = "R-" + _nextBookingId++,
-                RenterName = name, Phone = phone, Email = email,
-                UnitCode = unit.Code, UnitType = unit.TypeName, MonthlyRate = unit.MonthlyRate,
-                MoveIn = ResMoveInPicker.SelectedDate.Value.Date, Months = months
-            };
-            _bookings.Insert(0, booking);
-
-            // TODO: save `booking` through your DAO / Service here
-
-            unit.IsSelected = false;
-            unit.ReservedBy = name;          // tile turns gray, unclickable, "Reserved by: name"
-            _selectedTile = null;
-
-            ResetResForm();
-            UpdateResSummary();
-            UpdateLog();
-            ShowResMessage($"{unit.Title} reserved for {name}. Downpayment {ResBooking.Money(down)} recorded.", false);
-        }
-
-        // -----------------------------------------------------------------
-        //  Cancel a reservation (frees the unit again)
-        // -----------------------------------------------------------------
-        private void ResCancelRow_Click(object sender, RoutedEventArgs e)
-        {
-            var booking = (sender as FrameworkElement)?.DataContext as ResBooking;
-            if (booking == null) return;
-
-            var answer = MessageBox.Show(
-                $"Cancel reservation {booking.Id} for {booking.RenterName} ({booking.UnitText})?\n" +
-                "The unit will become available again.",
-                "Cancel reservation", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-            if (answer != MessageBoxResult.Yes) return;
-
-            _bookings.Remove(booking);
-
-            var unit = _unitTiles.FirstOrDefault(u => u.Code == booking.UnitCode);
-            if (unit != null) unit.ReservedBy = null;   // tile becomes clickable again
-
-            // TODO: delete / cancel `booking` through your DAO / Service here
-            UpdateLog();
-        }
-
-        // -----------------------------------------------------------------
-        //  Small helpers
-        // -----------------------------------------------------------------
-        private void ResetResForm()
-        {
-            ResNameBox.Text = "";
-            ResPhoneBox.Text = "";
-            ResEmailBox.Text = "";
-            ResMoveInPicker.SelectedDate = DateTime.Today;
-            ResDurationBox.Text = "6";
-        }
-
-        private void UpdateLog()
-        {
-            int n = _bookings.Count;
-            ResLogCountText.Text = n == 1 ? "1 active reservation" : $"{n} active reservations";
-            ResEmptyText.Visibility = n == 0 ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        private void ShowResMessage(string text, bool isError)
-        {
-            ResFormMessage.Text = text;
-            ResFormMessage.Foreground = (SolidColorBrush)new BrushConverter().ConvertFromString(isError ? "#C0392B" : "#1E6B3B");
-        }
-#nullable restore
     }
 }

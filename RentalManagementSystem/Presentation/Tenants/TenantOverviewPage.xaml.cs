@@ -7,13 +7,16 @@ namespace RentalManagementSystem.Presentation
 {
     public partial class TenantOverviewPage : UserControl
     {
-        private TenantOverviewViewModel ViewModel => DataContext as TenantOverviewViewModel;
+        public TenantOverviewViewModel ViewModel => DataContext as TenantOverviewViewModel;
 
         public TenantOverviewPage()
         {
             InitializeComponent();
             DataContext = new TenantOverviewViewModel();
             BindItemsSource();
+
+            // Auto-refresh data when the page opens/navigates back
+            Loaded += (s, e) => RefreshData();
         }
 
         public TenantOverviewPage(User loggedInUser)
@@ -21,6 +24,21 @@ namespace RentalManagementSystem.Presentation
             InitializeComponent();
             DataContext = new TenantOverviewViewModel(loggedInUser);
             BindItemsSource();
+
+            // Auto-refresh data when the page opens/navigates back
+            Loaded += (s, e) => RefreshData();
+        }
+
+        /// <summary>
+        /// Public method to trigger a fresh database reload from UI/Dashboard
+        /// </summary>
+        public void RefreshData()
+        {
+            if (ViewModel != null)
+            {
+                ViewModel.LoadPropertiesFromDb();
+                BindItemsSource();
+            }
         }
 
         private void BindItemsSource()

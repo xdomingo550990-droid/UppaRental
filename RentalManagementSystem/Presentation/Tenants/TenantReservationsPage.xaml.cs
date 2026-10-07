@@ -1,4 +1,6 @@
+using MySql.Data.MySqlClient;
 using RentalManagementSystem.Model;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,6 +9,16 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+public class PropertyStatusGroup
+{
+    public string StatusName { get; set; } = "";
+
+    // Bindings expected by PropertyCardStyle.xaml
+    public string Title => StatusName;
+    public string Subtitle => $"{Items.Count} {(Items.Count == 1 ? "Property" : "Properties")}";
+    public Visibility DividerVisibility => Visibility.Visible;
+    public List<Property> Items { get; set; } = new();
+}
 
 namespace RentalManagementSystem.Presentation
 {
@@ -54,65 +66,116 @@ namespace RentalManagementSystem.Presentation
 
     public partial class TenantReservationsPage : UserControl
     {
-        // Only this tenant's reservations (replace with a database/DAO query for the logged-in tenant).
-        private readonly ObservableCollection<MyReservationRow> _reservations = new ObservableCollection<MyReservationRow>
-        {
-            new MyReservationRow { ReservationNo = "R-1002", Unit = "Unit 203", UnitType = "2-Bedroom",    MonthlyRate = 20000, Months = 12, MoveIn = DateTime.Today.AddDays(10), Status = "Confirmed" },
-            new MyReservationRow { ReservationNo = "R-1007", Unit = "Unit 301", UnitType = "Family Suite", MonthlyRate = 25000, Months = 6,  MoveIn = DateTime.Today.AddDays(45), Status = "Pending" },
-            new MyReservationRow { ReservationNo = "R-0994", Unit = "Unit 102", UnitType = "Studio",       MonthlyRate = 10000, Months = 3,  MoveIn = DateTime.Today.AddDays(-20), Status = "Cancelled" },
-        };
-
-        private ICollectionView _view = null!;
-        private string _statusFilter = "All";
-        private string _globalSearchQuery = "";
+        // Class-level declaration required by CollectionViewSource and query methods
+        private readonly ObservableCollection<ReservationRow> _reservations = new ObservableCollection<ReservationRow>();
+        private readonly ICollectionView _view;
         private User loggedInUser;
+        private string _selectedStatusFilter = "All";
+        private string _searchQuery = "";
 
         public TenantReservationsPage()
         {
             InitializeComponent();
 
             _view = CollectionViewSource.GetDefaultView(_reservations);
-            _view.Filter = Matches;
+            _view.Filter = MatchesFilter;
             dgReservations.ItemsSource = _view;
-
+            RefreshView();
             UpdateSummary();
         }
 
-        public TenantReservationsPage(User loggedInUser)
+        // Chaining : this() executes InitializeComponent() and sets up _view
+        public TenantReservationsPage(User loggedInUser) : this()
         {
             this.loggedInUser = loggedInUser;
+            LoadReservationsFromDb();
         }
 
-        // ---------- Global Search Hook (the dashboard's top search bar) ----------
+        private void LoadReservationsFromDb()
+        {
+            _reservations.Clear();
+            if (loggedInUser == null) return;
+
+            try
+            {
+                using (var conn = DatabaseHelper.GetConnection())
+                {
+                    conn.Open();
+                    string sql = @"SELECT reservation_no, unit_label, move_in_date, term_months, 
+                                         total_rent, downpayment_amount, status 
+                                  FROM reservations 
+                                  WHERE tenant_id = @tenantId";
+
+                    using (var cmd = new MySqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@tenantId", loggedInUser.getUserId());
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                _reservations.Add(new ReservationRow
+                                {
+                                    ReservationNo = reader["reservation_no"]?.ToString() ?? "",
+                                    UnitLabel = reader["unit_label"]?.ToString() ?? "",
+                                    MoveInDate = reader["move_in_date"] != DBNull.Value ? Convert.ToDateTime(reader["move_in_date"]) : (DateTime?)null,
+                                    TermMonths = reader["term_months"] != DBNull.Value ? Convert.ToInt32(reader["term_months"]) : 0,
+                                    TotalRent = reader["total_rent"] != DBNull.Value ? Convert.ToDecimal(reader["total_rent"]) : 0m,
+                                    DownpaymentAmount = reader["downpayment_amount"] != DBNull.Value ? Convert.ToDecimal(reader["downpayment_amount"]) : 0m,
+                                    Status = reader["status"]?.ToString() ?? "Pending"
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handles database connectivity errors gracefully
+                System.Diagnostics.Debug.WriteLine($"Error loading reservations: {ex.Message}");
+            }
+
+            _view.Refresh();
+            UpdateSummary();
+        }
 
         public void ApplyGlobalSearch(string query)
         {
-            _globalSearchQuery = query?.Trim() ?? "";
-            RefreshView();
-        }
-
-        // ---------- Filtering ----------
-
-        private bool Matches(object item)
-        {
-            var r = (MyReservationRow)item;
-
-            if (_statusFilter != "All" && r.Status != _statusFilter) return false;
-
-            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
-
-            return r.ReservationNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || r.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || r.UnitType.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || r.Status.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+            _searchQuery = query ?? "";
+            if (_view != null)
+            {
+                _view.Refresh();
+                UpdateEmptyState();
+            }
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton rb) _statusFilter = rb.Tag?.ToString() ?? "All";
-            RefreshView();
+            if (sender is RadioButton rb && rb.Tag != null)
+            {
+                _selectedStatusFilter = rb.Tag.ToString();
+                if (_view != null)
+                {
+                    _view.Refresh();
+                    UpdateEmptyState();
+                }
+            }
         }
 
+        private bool MatchesFilter(object item)
+        {
+            if (!(item is ReservationRow res)) return false;
+
+            bool matchesStatus = string.Equals(_selectedStatusFilter, "All", StringComparison.OrdinalIgnoreCase) ||
+                                 string.Equals(res.Status, _selectedStatusFilter, StringComparison.OrdinalIgnoreCase);
+
+            if (!matchesStatus) return false;
+
+            if (string.IsNullOrWhiteSpace(_searchQuery)) return true;
+
+            return (res.ReservationNo?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                   (res.UnitLabel?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                   (res.Status?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
         private void RefreshView()
         {
             // Filter_Checked fires once during InitializeComponent, before the view exists.
@@ -120,50 +183,6 @@ namespace RentalManagementSystem.Presentation
 
             _view.Refresh();
             txtEmpty.Visibility = _view.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
-        }
-
-        // ---------- Summary ----------
-
-        private void UpdateSummary()
-        {
-            var confirmed = _reservations.Where(r => r.Status == "Confirmed").ToList();
-            var pending = _reservations.Where(r => r.Status == "Pending").ToList();
-            var cancelled = _reservations.Where(r => r.Status == "Cancelled").ToList();
-
-            txtActive.Text = (confirmed.Count + pending.Count).ToString();
-            txtActiveNote.Text = pending.Count == 0
-                ? "All downpayments received"
-                : $"{pending.Count} awaiting downpayment";
-
-            txtDownPaid.Text = MyReservationRow.Peso(confirmed.Sum(r => r.Downpayment));
-            txtDownPaidNote.Text = $"{confirmed.Count} confirmed reservation(s)";
-
-            var next = confirmed.Where(r => r.MoveIn.Date >= DateTime.Today)
-                                .OrderBy(r => r.MoveIn)
-                                .FirstOrDefault();
-            txtNextMoveIn.Text = next?.MoveInText ?? "—";
-            txtNextMoveInNote.Text = next == null ? "No upcoming move-ins" : $"{next.Unit} · {next.TermText}";
-
-            rbAll.Content = $"All ({_reservations.Count})";
-            rbConfirmed.Content = $"Confirmed ({confirmed.Count})";
-            rbPending.Content = $"Pending ({pending.Count})";
-            rbCancelled.Content = $"Cancelled ({cancelled.Count})";
-        }
-
-        // ---------- Buttons ----------
-
-        private void View_Click(object sender, RoutedEventArgs e)
-        {
-            if (((FrameworkElement)sender).DataContext is MyReservationRow r)
-            {
-                MessageBox.Show(
-                    $"{r.ReservationNo}\n{r.UnitLabel}\n\n" +
-                    $"Move-in: {r.MoveInText}\nTerm: {r.TermText}\n" +
-                    $"Monthly rent: {MyReservationRow.Peso(r.MonthlyRate)}\n" +
-                    $"Total rent: {r.TotalText}\n" +
-                    $"Downpayment (20%): {r.DownText}\n\nStatus: {r.Status}",
-                    "Reservation details");
-            }
         }
 
         // Pending -> Confirmed once the 20% downpayment is paid.
@@ -188,7 +207,52 @@ namespace RentalManagementSystem.Presentation
             UpdateSummary();
             MessageBox.Show($"Downpayment received. {r.Unit} is now reserved for you.", "My Reservations");
         }
+        private void UpdateSummary()
+        {
+            int activeCount = _reservations.Count(r => r.Status == "Confirmed" || r.Status == "Pending");
+            int pendingCount = _reservations.Count(r => r.Status == "Pending");
+            decimal downPaid = _reservations.Where(r => r.Status == "Confirmed").Sum(r => r.DownpaymentAmount);
+            int confirmedCount = _reservations.Count(r => r.Status == "Confirmed");
+            
+            var nextMove = _reservations
+                .Where(r => (r.Status == "Confirmed" || r.Status == "Pending") && r.MoveInDate.HasValue)
+                .OrderBy(r => r.MoveInDate)
+                .FirstOrDefault();
 
+            txtActive.Text = activeCount.ToString();
+            txtActiveNote.Text = pendingCount > 0 ? $"{pendingCount} awaiting downpayment" : "All up to date";
+
+            txtDownPaid.Text = $"₱{downPaid:N2}";
+            txtDownPaidNote.Text = $"{confirmedCount} confirmed reservation(s)";
+
+            if (nextMove != null && nextMove.MoveInDate.HasValue)
+            {
+                txtNextMoveIn.Text = nextMove.MoveInDate.Value.ToString("MMM dd, yyyy");
+                txtNextMoveInNote.Text = $"{nextMove.UnitLabel} · {nextMove.TermMonths} months";
+            }
+            else
+            {
+                txtNextMoveIn.Text = "—";
+                txtNextMoveInNote.Text = "No upcoming move-in";
+            }
+
+            UpdateEmptyState();
+        }
+
+        private void UpdateEmptyState()
+        {
+            bool hasItems = _view != null && !_view.IsEmpty;
+            txtEmpty.Visibility = hasItems ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void View_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is ReservationRow row)
+            {
+                MessageBox.Show($"Reservation #{row.ReservationNo}\nUnit: {row.UnitLabel}\nStatus: {row.Status}",
+                                "Reservation Details", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
             if (((FrameworkElement)sender).DataContext is not MyReservationRow r) return;
@@ -205,8 +269,24 @@ namespace RentalManagementSystem.Presentation
             // TODO: cancel `r` through your DAO / Service here (and free the unit on the landlord side).
             r.Status = "Cancelled";
 
-            RefreshView();
             UpdateSummary();
         }
+
+    }
+
+    public class ReservationRow
+    {
+        public string ReservationNo { get; set; }
+        public string UnitLabel { get; set; }
+        public DateTime? MoveInDate { get; set; }
+        public int TermMonths { get; set; }
+        public decimal TotalRent { get; set; }
+        public decimal DownpaymentAmount { get; set; }
+        public string Status { get; set; }
+
+        public string MoveInText => MoveInDate.HasValue ? MoveInDate.Value.ToString("MMM dd, yyyy") : "—";
+        public string TermText => $"{TermMonths} months";
+        public string TotalText => $"₱{TotalRent:N2}";
+        public string DownText => $"₱{DownpaymentAmount:N2}";
     }
 }

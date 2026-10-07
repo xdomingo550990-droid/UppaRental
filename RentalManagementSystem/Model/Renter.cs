@@ -23,17 +23,17 @@ namespace RentalManagementSystem.Model
         // Parameterless Constructor
         public Renter()
         {
-            Role = Role.Tenant;
+            setRole(Role.Tenant);
         }
 
         // Parameterized Constructor
         public Renter(int renterId, string name, string contact, string address)
         {
-            UserId = renterId;
-            FullName = name;
-            Phone = contact;
+            setUserId(renterId);
+            setFullName(name);
+            setPhone(contact);
             Address = address;
-            Role = Role.Tenant;
+            setRole(Role.Tenant);
         }
     }
 }

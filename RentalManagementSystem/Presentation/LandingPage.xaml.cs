@@ -22,6 +22,8 @@ namespace RentalManagementSystem.Presentation
 
         }
 
+        
+
         // Nav "Login" -> open the popup on the Login side
         private void LoginButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: true);
 
@@ -64,11 +66,15 @@ namespace RentalManagementSystem.Presentation
         // Arrow pressed -> remember the role, then show Login / Register
         private void UserType_NextClicked(object sender, EventArgs e)
         {
-            SelectedUserType = UserType.SelectedRole;
+            string selectedRole = UserType.SelectedRole;
 
+            // 1. Pass the role to AuthCard
+            Auth.SetUserRole(selectedRole);
+
+            // 2. Hide role picker card and show Auth card in Register mode
             UserType.Visibility = Visibility.Collapsed;
-            Auth.ShowMode(false);   // role is only asked on Sign Up, so open the Registration side
             Auth.Visibility = Visibility.Visible;
+            Auth.ShowMode(login: false);
         }
 
         // Back pressed -> close the popup and return to the landing page
@@ -90,6 +96,13 @@ namespace RentalManagementSystem.Presentation
         }
 
         private void Auth_CloseRequested(object sender, EventArgs e) => CloseAuth();
-        
+
+        // Login succeeded -> open Dashboard, close this window
+        private void Auth_LoginSucceeded(object sender, EventArgs e)
+        {
+            DashboardPage dashboard = new DashboardPage();
+            dashboard.Show();
+            this.Close();
+        }
     }
 }

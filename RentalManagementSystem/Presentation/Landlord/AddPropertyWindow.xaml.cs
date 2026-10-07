@@ -1,8 +1,11 @@
+﻿using Microsoft.Win32;
+using RentalManagementSystem.Model;
+using RentalManagementSystem.ViewModel;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,124 +13,70 @@ using System.Windows.Media;
 
 namespace RentalManagementSystem.Presentation
 {
-    public class PropertyFormResult
-    {
-        public string Name { get; set; } = "";
-        public string Location { get; set; } = "";
-        public string Floor { get; set; } = "";        // same value as Floors, kept for older code
-        public int Floors { get; set; }
-        public int Bedrooms { get; set; }
-        public int Bathrooms { get; set; }
-        public string RoomType { get; set; } = "";
-        public decimal DailyRent { get; set; }          // was MonthlyRent
-        public decimal SecurityDeposit { get; set; }
-        public int SizeSqFt { get; set; }
-        public int MaxCapacity { get; set; }
-        public string Status { get; set; } = "";
-        public bool IsDraft { get; set; }
-
-        public UtilitySettings Utilities { get; set; } = new UtilitySettings();
-
-        public bool WaterIncluded { get; set; }
-        public bool ElectricityMetered { get; set; }   // true when electricity is NOT included
-        public bool WifiIncluded { get; set; }
-        public List<string> Amenities { get; set; } = new();
-        public List<string> PhotoPaths { get; set; } = new();
-        public string Notes { get; set; } = "";
-    }
-
     public partial class AddPropertyWindow : Window
     {
         private int _currentStep = 1;
-        private readonly List<string> _uploadedPhotoPaths = new();
-
-        public PropertyFormResult Result { get; private set; } = new PropertyFormResult();
-
+        private readonly List<string> _uploadedPhotoPaths = new List<string>();
+        public LandlordViewModel ViewModel { get; }
+        public PropertyFormResult Result { get; private set; }
         public AddPropertyWindow()
         {
             InitializeComponent();
+            ViewModel = new LandlordViewModel();
+            DataContext = ViewModel;
+
             UpdateStepUI();
         }
 
-        private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        public AddPropertyWindow(LandlordViewModel viewModel)
         {
-            if (e.ButtonState == MouseButtonState.Pressed)
-                DragMove();
+            InitializeComponent();
+            ViewModel = viewModel ?? new LandlordViewModel();
+            DataContext = ViewModel;
+
+            UpdateStepUI();
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Escape)
-                Close();
-        }
+        #region Wizard Navigation & Step Handling
 
         private void Primary_Click(object sender, RoutedEventArgs e)
         {
-            ErrorText.Visibility = Visibility.Collapsed;
+            ClearError();
 
-            if (_currentStep == 1)
+            if (!ValidateCurrentStep())
+                return;
+
+            if (_currentStep < 3)
             {
-                if (string.IsNullOrWhiteSpace(txtName.Text))
-                {
-                    ShowError("Please enter a property or unit name.");
-                    return;
-                }
-                if (!int.TryParse(txtFloors.Text.Trim(), out int floors) || floors < 1)
-                {
-                    ShowError("Number of floors must be a whole number of at least 1.");
-                    return;
-                }
-                if (!int.TryParse(txtBedrooms.Text.Trim(), out _))
-                {
-                    ShowError("Please enter the number of bedrooms (0 if none).");
-                    return;
-                }
-                if (!int.TryParse(txtBathrooms.Text.Trim(), out _))
-                {
-                    ShowError("Please enter the number of bathrooms (0 if none).");
-                    return;
-                }
-                if (!int.TryParse(txtCapacity.Text.Trim(), out int capacity) || capacity < 1)
-                {
-                    ShowError("Maximum capacity must be a whole number of at least 1.");
-                    return;
-                }
-                _currentStep = 2;
+                _currentStep++;
                 UpdateStepUI();
             }
-            else if (_currentStep == 2)
+            else
             {
-                if (string.IsNullOrWhiteSpace(txtRent.Text) || !decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out _))
-                {
-                    ShowError("Please enter a valid daily rent amount.");
-                    return;
-                }
-                _currentStep = 3;
-                UpdateStepUI();
-            }
-            else if (_currentStep == 3)
-            {
-                PopulateResult(isDraft: false);
-                DialogResult = true;
-                Close();
+                SaveProperty(isDraft: false);
             }
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
+            ClearError();
             if (_currentStep > 1)
             {
                 _currentStep--;
-                ErrorText.Visibility = Visibility.Collapsed;
                 UpdateStepUI();
             }
         }
 
         private void SaveDraft_Click(object sender, RoutedEventArgs e)
         {
-            PopulateResult(isDraft: true);
-            DialogResult = true;
-            Close();
+            ClearError();
+            if (string.IsNullOrWhiteSpace(txtName.Text))
+            {
+                ShowError("Please enter at least a Property/Unit Name to save as draft.");
+                return;
+            }
+
+            SaveProperty(isDraft: true);
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -136,91 +85,254 @@ namespace RentalManagementSystem.Presentation
             Close();
         }
 
-        private void PopulateResult(bool isDraft)
+        private void UpdateStepUI()
         {
-            decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out decimal rent);
-            decimal.TryParse(txtDeposit.Text.Replace(",", "").Trim(), out decimal deposit);
+            // Panel Visibilities
+            Step1Panel.Visibility = _currentStep == 1 ? Visibility.Visible : Visibility.Collapsed;
+            Step2Panel.Visibility = _currentStep == 2 ? Visibility.Visible : Visibility.Collapsed;
+            Step3Panel.Visibility = _currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
 
-            int.TryParse(txtCapacity.Text.Trim(), out int capacity);   // 0 = not set (drafts only)
+            // Footer Buttons
+            btnBack.Visibility = _currentStep > 1 ? Visibility.Visible : Visibility.Collapsed;
+            btnPrimary.Content = _currentStep == 3 ? "Save Property" : "Next →";
 
-            // Size is stored in sq ft; convert if entered in sqm.
-            decimal.TryParse(txtSize.Text.Replace(",", "").Trim(), NumberStyles.Number,
-                CultureInfo.InvariantCulture, out decimal size);
-            if (rbSqm.IsChecked == true) size *= 10.7639m;
+            // Header & Indicators
+            var activeBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E3223"));
+            var inactiveBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E3EAE5"));
+            var activeText = Brushes.White;
+            var inactiveText = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7C8F80"));
+            var darkLabel = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1E3223"));
+            var mutedLabel = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#8A9A8D"));
 
-            // Get landlord input rates (default to 0 if invalid or empty)
-            decimal.TryParse(txtWaterRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal waterFee);
-            decimal.TryParse(txtElectricityRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal electricityFee);
-            decimal.TryParse(txtWifiRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal wifiFee);
-
-            // Checked   = billed to the tenant at the specified rate (not included in rent)
-            // Unchecked = included in rent
-            var utilities = new UtilitySettings
+            switch (_currentStep)
             {
-                Water = chkWater.IsChecked == true
-                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = waterFee }
-                    : new UtilityOption { Included = true },
-                Electricity = chkElectricity.IsChecked == true
-                    ? new UtilityOption { Included = false, Billing = UtilityBilling.SubMetered, Amount = electricityFee }
-                    : new UtilityOption { Included = true },
-                Wifi = chkWifi.IsChecked == true
-                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = wifiFee }
-                    : new UtilityOption { Included = true }
-            };
+                case 1:
+                    StepSubtitle.Text = "Step 1 of 3 · Basic Info";
 
-            int.TryParse(txtFloors.Text.Trim(), out int floors);
-            int.TryParse(txtBedrooms.Text.Trim(), out int bedrooms);
-            int.TryParse(txtBathrooms.Text.Trim(), out int bathrooms);
+                    Dot1.Background = activeBrush; Num1.Foreground = activeText; Label1.Foreground = darkLabel;
+                    Dot2.Background = inactiveBrush; Num2.Foreground = inactiveText; Label2.Foreground = mutedLabel;
+                    Dot3.Background = inactiveBrush; Num3.Foreground = inactiveText; Label3.Foreground = mutedLabel;
+                    Line1.Background = inactiveBrush; Line2.Background = inactiveBrush;
+                    break;
 
-            // New properties always start as Available.
-            const string status = "Available";
+                case 2:
+                    StepSubtitle.Text = "Step 2 of 3 · Financials & Utilities";
 
-            var amenities = new List<string>();
-            if (tbAircon.IsChecked == true) amenities.Add("Air Conditioning");
-            if (tbFurnished.IsChecked == true) amenities.Add("Fully Furnished");
-            if (tbBalcony.IsChecked == true) amenities.Add("Balcony");
-            if (tbPets.IsChecked == true) amenities.Add("Pet Friendly");
-            if (tbParking.IsChecked == true) amenities.Add("Parking Space");
+                    Dot1.Background = activeBrush; Num1.Foreground = activeText; Label1.Foreground = darkLabel;
+                    Dot2.Background = activeBrush; Num2.Foreground = activeText; Label2.Foreground = darkLabel;
+                    Dot3.Background = inactiveBrush; Num3.Foreground = inactiveText; Label3.Foreground = mutedLabel;
+                    Line1.Background = activeBrush; Line2.Background = inactiveBrush;
+                    break;
 
-            Result = new PropertyFormResult
-            {
-                Name = txtName.Text.Trim(),
-                Location = txtLocation.Text.Trim(),
-                Floor = floors.ToString(CultureInfo.InvariantCulture),
-                Floors = floors,
-                Bedrooms = bedrooms,
-                Bathrooms = bathrooms,
-                RoomType = (cmbRoomType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
-                DailyRent = rent,
-                SecurityDeposit = deposit,
-                SizeSqFt = (int)Math.Round(size),
-                MaxCapacity = capacity,
-                Status = status,
-                IsDraft = isDraft,
-                Utilities = utilities,
-                WaterIncluded = utilities.Water.Included,
-                ElectricityMetered = !utilities.Electricity.Included,
-                WifiIncluded = utilities.Wifi.Included,
-                Amenities = amenities,
-                PhotoPaths = new List<string>(_uploadedPhotoPaths),
-                Notes = txtNotes.Text.Trim()
-            };
+                case 3:
+                    StepSubtitle.Text = "Step 3 of 3 · Amenities & Photos";
+
+                    Dot1.Background = activeBrush; Num1.Foreground = activeText; Label1.Foreground = darkLabel;
+                    Dot2.Background = activeBrush; Num2.Foreground = activeText; Label2.Foreground = darkLabel;
+                    Dot3.Background = activeBrush; Num3.Foreground = activeText; Label3.Foreground = darkLabel;
+                    Line1.Background = activeBrush; Line2.Background = activeBrush;
+                    break;
+            }
+
+            ContentScroll.ScrollToHome();
         }
 
-        // ---------- number-only text boxes ----------
+        private bool ValidateCurrentStep()
+        {
+            if (_currentStep == 1)
+            {
+                if (string.IsNullOrWhiteSpace(txtName.Text))
+                {
+                    ShowError("Property / Unit Name is required.");
+                    txtName.Focus();
+                    return false;
+                }
 
-        private static bool AllDigits(string? text) =>
-            !string.IsNullOrEmpty(text) && text.All(c => c >= '0' && c <= '9');
+                if (string.IsNullOrWhiteSpace(txtFloors.Text) || !int.TryParse(txtFloors.Text, out _))
+                {
+                    ShowError("Please enter a valid number of floors.");
+                    txtFloors.Focus();
+                    return false;
+                }
 
-        private void NumberOnly_PreviewTextInput(object sender, TextCompositionEventArgs e) =>
-            e.Handled = !AllDigits(e.Text);
+                if (string.IsNullOrWhiteSpace(txtBedrooms.Text) || !int.TryParse(txtBedrooms.Text, out _))
+                {
+                    ShowError("Please enter a valid number of bedrooms.");
+                    txtBedrooms.Focus();
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtBathrooms.Text) || !int.TryParse(txtBathrooms.Text, out _))
+                {
+                    ShowError("Please enter a valid number of bathrooms.");
+                    txtBathrooms.Focus();
+                    return false;
+                }
+            }
+            else if (_currentStep == 2)
+            {
+                if (string.IsNullOrWhiteSpace(txtRent.Text) || !decimal.TryParse(txtRent.Text, out decimal rent) || rent <= 0)
+                {
+                    ShowError("Please enter a valid monthly rent amount.");
+                    txtRent.Focus();
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        #region Save Logic & ViewModel Integration
+
+        private void SaveProperty(bool isDraft)
+        {
+            try
+            {
+                var amenitiesList = new List<Amenities>();
+                if (tbAircon.IsChecked == true) amenitiesList.Add(Amenities.AirConditioning);
+                if (tbFurnished.IsChecked == true) amenitiesList.Add(Amenities.FullyFurnished);
+                if (tbBalcony.IsChecked == true) amenitiesList.Add(Amenities.Balcony);
+                if (tbPets.IsChecked == true) amenitiesList.Add(Amenities.CatFriendly);
+                if (tbParking.IsChecked == true) amenitiesList.Add(Amenities.ParkingSpaceIncluded);
+
+                PropertyType parsedType = PropertyType.Studio;
+                if (cmbRoomType.SelectedItem is ComboBoxItem item)
+                {
+                    string selectedText = item.Content.ToString()?.Replace(" ", "") ?? "Studio";
+                    Enum.TryParse(selectedText, true, out parsedType);
+                }
+
+                // Populate Result before closing
+                Result = new PropertyFormResult
+                {
+                    Name = txtName.Text.Trim(),
+                    NumberOfFloors = int.TryParse(txtFloors.Text, out int floors) ? floors : 1,
+                    NumberOfRooms = int.TryParse(txtBedrooms.Text, out int beds) ? beds : 1,
+                    NumberOfBathrooms = int.TryParse(txtBathrooms.Text, out int baths) ? baths : 1,
+                    MaximumCapacity = int.TryParse(txtCapacity.Text, out int cap) ? cap : 2,
+                    SizeUnit = int.TryParse(txtSize.Text, out int sz) ? sz : 0,
+                    PropertyType = parsedType,
+                    MonthlyRent = (int)(decimal.TryParse(txtRent.Text, out decimal rentVal) ? rentVal : 0m),
+                    SecurityDeposit = (int)(decimal.TryParse(txtDeposit.Text, out decimal depVal) ? depVal : 0m),
+                    Amenities = amenitiesList,
+                    PhotoPaths = new List<string>(_uploadedPhotoPaths),
+                    Notes = txtNotes.Text.Trim(),
+                    Status = isDraft ? "Draft" : "Available"
+                };
+
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                ShowError($"Failed to save property: {ex.Message}");
+            }
+        }
+
+        #endregion
+
+        #region Photo Drag & Drop / File Selection
+
+        private void DropZone_Click(object sender, MouseButtonEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                Multiselect = true,
+                Filter = "Image Files (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                AddPhotoFiles(openFileDialog.FileNames);
+            }
+        }
+
+        private void DropZone_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effects = DragDropEffects.None;
+            }
+            e.Handled = true;
+        }
+
+        private void DropZone_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                var validImages = files.Where(f =>
+                    f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                    f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                    f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)).ToArray();
+
+                AddPhotoFiles(validImages);
+            }
+        }
+
+        private void AddPhotoFiles(string[] paths)
+        {
+            foreach (var path in paths)
+            {
+                if (!_uploadedPhotoPaths.Contains(path))
+                {
+                    _uploadedPhotoPaths.Add(path);
+                }
+            }
+
+            if (_uploadedPhotoPaths.Count > 0)
+            {
+                PhotoCountText.Text = $"✓ {_uploadedPhotoPaths.Count} photo(s) selected: " +
+                                     string.Join(", ", _uploadedPhotoPaths.Select(System.IO.Path.GetFileName));
+                PhotoCountText.Visibility = Visibility.Visible;
+            }
+        }
+
+        #endregion
+
+        #region Helper Methods & Input Constraints
+
+        private void NumberOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !Regex.IsMatch(e.Text, "^[0-9]+$");
+        }
 
         private void NumberOnly_Pasting(object sender, DataObjectPastingEventArgs e)
         {
-            if (e.DataObject.GetDataPresent(typeof(string)) &&
-                e.DataObject.GetData(typeof(string)) is string text && AllDigits(text.Trim()))
-                return;
-            e.CancelCommand();
+            if (e.DataObject.GetDataPresent(typeof(string)))
+            {
+                string text = (string)e.DataObject.GetData(typeof(string));
+                if (!Regex.IsMatch(text, "^[0-9]+$"))
+                {
+                    e.CancelCommand();
+                }
+            }
+            else
+            {
+                e.CancelCommand();
+            }
+        }
+
+        private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed)
+            {
+                DragMove();
+            }
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                Cancel_Click(sender, e);
+            }
         }
 
         private void ShowError(string message)
@@ -229,108 +341,12 @@ namespace RentalManagementSystem.Presentation
             ErrorText.Visibility = Visibility.Visible;
         }
 
-        private void UpdateStepUI()
+        private void ClearError()
         {
-            Step1Panel.Visibility = _currentStep == 1 ? Visibility.Visible : Visibility.Collapsed;
-            Step2Panel.Visibility = _currentStep == 2 ? Visibility.Visible : Visibility.Collapsed;
-            Step3Panel.Visibility = _currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
-
-            btnBack.Visibility = _currentStep > 1 ? Visibility.Visible : Visibility.Collapsed;
-            btnPrimary.Content = _currentStep == 3 ? "Save Unit" : "Next →";
-
-            StepSubtitle.Text = _currentStep switch
-            {
-                1 => "Step 1 of 3 · Basic Info",
-                2 => "Step 2 of 3 · Financials",
-                3 => "Step 3 of 3 · Amenities & Photos",
-                _ => ""
-            };
-
-            SetIndicator(Dot1, Num1, Label1, Line1, active: _currentStep >= 1, current: _currentStep == 1);
-            SetIndicator(Dot2, Num2, Label2, Line2, active: _currentStep >= 2, current: _currentStep == 2);
-            SetIndicator(Dot3, Num3, Label3, null, active: _currentStep >= 3, current: _currentStep == 3);
+            ErrorText.Text = string.Empty;
+            ErrorText.Visibility = Visibility.Collapsed;
         }
 
-        private static void SetIndicator(Border dot, TextBlock num, TextBlock label, Border? line, bool active, bool current)
-        {
-            var darkGreen = (Brush)new BrushConverter().ConvertFrom("#1E3223")!;
-            var lightGreen = (Brush)new BrushConverter().ConvertFrom("#E3EAE5")!;
-            var textMuted = (Brush)new BrushConverter().ConvertFrom("#7C8F80")!;
-
-            if (current || active)
-            {
-                dot.Background = darkGreen;
-                num.Foreground = Brushes.White;
-                label.Foreground = darkGreen;
-            }
-            else
-            {
-                dot.Background = lightGreen;
-                num.Foreground = textMuted;
-                label.Foreground = textMuted;
-            }
-
-            if (line != null)
-            {
-                line.Background = active ? darkGreen : (Brush)new BrushConverter().ConvertFrom("#DDE5DF")!;
-            }
-        }
-
-        private void DropZone_Click(object sender, MouseButtonEventArgs e)
-        {
-            var openFileDialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Multiselect = true,
-                Filter = "Image Files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                foreach (string filename in openFileDialog.FileNames)
-                {
-                    _uploadedPhotoPaths.Add(filename);
-                }
-                UpdatePhotoCount();
-            }
-        }
-
-        private void DropZone_DragOver(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-                e.Effects = DragDropEffects.Copy;
-            else
-                e.Effects = DragDropEffects.None;
-
-            e.Handled = true;
-        }
-
-        private void DropZone_Drop(object sender, DragEventArgs e)
-        {
-            if (e.Data.GetData(DataFormats.FileDrop) is string[] files)
-            {
-                foreach (string file in files)
-                {
-                    string ext = Path.GetExtension(file).ToLower();
-                    if (ext == ".jpg" || ext == ".jpeg" || ext == ".png")
-                    {
-                        _uploadedPhotoPaths.Add(file);
-                    }
-                }
-                UpdatePhotoCount();
-            }
-        }
-
-        private void UpdatePhotoCount()
-        {
-            if (_uploadedPhotoPaths.Count > 0)
-            {
-                PhotoCountText.Text = $"✓ {_uploadedPhotoPaths.Count} photo(s) selected.";
-                PhotoCountText.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                PhotoCountText.Visibility = Visibility.Collapsed;
-            }
-        }
+        #endregion
     }
 }

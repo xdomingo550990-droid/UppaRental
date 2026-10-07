@@ -61,6 +61,7 @@ namespace RentalManagementSystem.Presentation
                 : HorizontalAlignment.Right;
         }
 
+
         private void NavButton_Click(object sender, RoutedEventArgs e)
         {
             var nav = sender as RadioButton;

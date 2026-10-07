@@ -5,10 +5,11 @@ namespace RentalManagementSystem.Model
 {
     public class Payment
     {
-        // ---------- Database entity properties ----------
         public int PaymentId { get; set; }
 
         /// <summary>Foreign key to the paying user (was previously typed as User, which broke DB mapping).</summary>
+        public int UserId { get; set; }
+        // Foreign Key ID (used for database queries)
         public int UserId { get; set; }
 
         /// <summary>Optional navigation property, filled by DAO/JOIN or by the UI when available.</summary>
@@ -18,13 +19,24 @@ namespace RentalManagementSystem.Model
         public int? BillId { get; set; }           // Paying a bill
         public int? ReservationId { get; set; }    // Paying a reservation down payment
 
+        // Optional Navigation Property (populated when joining models)
+        public User? User { get; set; }
+
+        // What this payment is for (fill ONE of these)
+        public int? BillId { get; set; }           // Paying a bill
+        public int? ReservationId { get; set; }    // Paying a reservation down payment
+
         public DateTime PaymentDate { get; set; } = DateTime.Now;
         public decimal Amount { get; set; }
         public string PaymentMethod { get; set; } = "Cash";           // Cash, GCash, Bank Transfer, Online payment, etc.
         public string ReferenceNumber { get; set; } = string.Empty;   // GCash / bank reference (e.g., BT-55120934)
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string PaymentMethod { get; set; } = "Cash";           // Cash, GCash, Bank Transfer, Credit/Debit Card
+        public string ReferenceNumber { get; set; } = string.Empty;   // GCash / bank reference
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // ---------- Display-only / extended properties (filled by DAO JOINs or the UI) ----------
+        // Display only: filled by JOINs in DAOs/Services
         public string RenterName { get; set; } = string.Empty;
         public string ReceiptNumber { get; set; } = string.Empty;     // e.g., "RCT-2951"
         public string InvoiceNumber { get; set; } = string.Empty;     // e.g., "INV-1993" (joined from Bills)
@@ -35,6 +47,7 @@ namespace RentalManagementSystem.Model
         public string FormattedDatePaid => PaymentDate.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
 
         // Parameterless constructor (for WPF data binding / DAO mapping)
+        // Parameterless Constructor (for WPF Data Binding)
         public Payment() { }
 
         // Parameterized constructor
@@ -48,6 +61,13 @@ namespace RentalManagementSystem.Model
             string receiptNumber = "",
             string invoiceNumber = "",
             string period = "")
+        // Parameterized Constructor
+        public Payment(int paymentId,
+                       DateTime paymentDate,
+                       decimal amount,
+                       string paymentMethod,
+                       string referenceNumber,
+                       User user)
         {
             PaymentId = paymentId;
             PaymentDate = paymentDate;
@@ -58,6 +78,8 @@ namespace RentalManagementSystem.Model
             ReceiptNumber = receiptNumber;
             InvoiceNumber = invoiceNumber;
             Period = period;
+            User = user;
+            UserId = user?.getUserId() ?? user?.UserId ?? 0;
         }
     }
 }

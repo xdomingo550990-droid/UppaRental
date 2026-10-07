@@ -6,11 +6,11 @@ using System.Windows.Controls;
 
 namespace RentalManagementSystem.Presentation
 {
-    public partial class UnitsPage : UserControl
+    public partial class PropertiesPage : UserControl
     {
         private string _filter = "All";
 
-        public UnitsPage()
+        public PropertiesPage()
         {
             InitializeComponent();
             LoadSections();

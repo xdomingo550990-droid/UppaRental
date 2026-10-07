@@ -240,11 +240,10 @@
                             BackClicked="UserType_BackClicked"/>
 
         <!-- Step 2: Login / Register -->
-        <local:AuthCard x:Name="Auth"
+            <local:AuthCard x:Name="Auth"
                         Visibility="Collapsed"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        LoginSucceeded="Auth_LoginSucceeded"
                         RegisterRequested="Auth_RegisterRequested"
                         CloseRequested="Auth_CloseRequested"/>
     </Grid>

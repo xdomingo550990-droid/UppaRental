@@ -22,8 +22,6 @@ namespace RentalManagementSystem.Presentation
 
         }
 
-        
-
         // Nav "Login" -> open the popup on the Login side
         private void LoginButton_Click(object sender, RoutedEventArgs e) => OpenAuth(login: true);
 
@@ -92,13 +90,6 @@ namespace RentalManagementSystem.Presentation
         }
 
         private void Auth_CloseRequested(object sender, EventArgs e) => CloseAuth();
-
-        // Login succeeded -> open Dashboard, close this window
-        private void Auth_LoginSucceeded(object sender, EventArgs e)
-        {
-            DashboardPage dashboard = new DashboardPage();
-            dashboard.Show();
-            this.Close();
-        }
+        
     }
 }

@@ -1,5 +1,5 @@
-﻿using System;
-using System.Configuration;
+﻿using RentalManagementSystem.Model;   // for User
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
@@ -12,11 +12,19 @@ namespace RentalManagementSystem.Presentation
         private const double SidebarCollapsedWidth = 72;
         private bool _sidebarCollapsed;
 
-        public DashboardPage()
+        // Logged-in user (passed from AuthCard)
+        private readonly User? _currentUser;
+
+        // Empty constructor, kept so the designer still works
+        public DashboardPage() : this(null) { }
+
+        // FIX: constructor that accepts the user (AuthCard calls this)
+        public DashboardPage(User? user)
         {
             InitializeComponent();
+            _currentUser = user;
 
-            // Overview is the page shown when the dashboard opens
+            // Overview is the first page shown
             MainContentFrame.Content = new OverviewPage();
         }
 
@@ -32,6 +40,7 @@ namespace RentalManagementSystem.Presentation
             };
             SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, animation);
 
+            // Hide brand text when collapsed
             BrandPanel.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
             btnToggleSidebar.HorizontalAlignment = _sidebarCollapsed
                 ? HorizontalAlignment.Center
@@ -45,25 +54,25 @@ namespace RentalManagementSystem.Presentation
 
             txtPageTitle.Text = nav.Content?.ToString();
 
-            // Start every page with an empty search box
+            // Clear search on every page change
             txtSearch.Clear();
 
-            // The top search bar is hidden on the Properties and Settings pages
+            // Search bar hidden on Properties and Profile
             bool hideSearch = nav.Name == nameof(btnSettings) || nav.Name == nameof(btnProperties);
             SearchBar.Visibility = hideSearch ? Visibility.Collapsed : Visibility.Visible;
 
             MainContentFrame.Content = nav.Name switch
             {
                 nameof(btnOverview) => new OverviewPage(),
-                nameof(btnProperties) => new UnitsPage(),
-                nameof(btnRenters) => new RentersPage(),      // Renters + Reservations share this page
+                nameof(btnProperties) => new PropertiesPage(),   // FIX: was UnitsPage (not in project)
+                nameof(btnRenters) => new RentersPage(),
                 nameof(btnBilling) => new BillingPage(),
-                nameof(btnSettings) => new ProfilePage(),    // profile card at the bottom of the sidebar
+                nameof(btnSettings) => new ProfilePage(),
                 _ => MainContentFrame.Content
             };
         }
 
-        // Sends what you type in the top search bar to the page that is open
+        // Send search text to the open page
         private void Search_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (MainContentFrame == null) return;
@@ -75,10 +84,10 @@ namespace RentalManagementSystem.Presentation
                 case OverviewPage overview:
                     overview.SetSearch(query);
                     break;
-                case RentersPage renters:      // renters + reservations table
+                case RentersPage renters:
                     renters.ApplyGlobalSearch(query);
                     break;
-                case BillingPage billing:      // invoices table
+                case BillingPage billing:
                     billing.ApplyGlobalSearch(query);
                     break;
             }
@@ -91,22 +100,22 @@ namespace RentalManagementSystem.Presentation
                 "Confirm Logout",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question,
-                MessageBoxResult.No);          // "No" is the default so Enter doesn't log you out by accident
+                MessageBoxResult.No);   // "No" is default
 
             if (result != MessageBoxResult.Yes)
                 return;
 
-            // If you keep any session or current-user state, clear it here
-            // e.g. SessionManager.CurrentUser = null;
+            // Clear session here if you add one
+            _ = _currentUser;
 
             var landing = new LandingPage();
-            landing.Show();                    // open the landing page first...
-            this.Close();                      // ...then close the dashboard
+            landing.Show();
+            this.Close();
         }
 
+        // Unused handler, kept in case the XAML references it
         private void btnProperties_Checked(object sender, RoutedEventArgs e)
         {
-
         }
     }
 }

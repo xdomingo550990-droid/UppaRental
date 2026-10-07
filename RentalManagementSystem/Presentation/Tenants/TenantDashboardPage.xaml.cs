@@ -1,3 +1,4 @@
+using RentalManagementSystem.Model;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,15 +11,38 @@ namespace RentalManagementSystem.Presentation
         private const double SidebarExpandedWidth = 260;
         private const double SidebarCollapsedWidth = 72;
         private bool _sidebarCollapsed;
+        private User loggedInUser;
 
         public TenantDashboardPage()
         {
             InitializeComponent();
-
-            // Overview is the page shown when the dashboard opens
             MainContentFrame.Content = new TenantOverviewPage();
         }
 
+        // Chaining : this() ensures InitializeComponent() and default page setup execute
+        public TenantDashboardPage(User loggedInUser) : this()
+        {
+            this.loggedInUser = loggedInUser;
+
+            if (this.loggedInUser != null)
+            {
+                string firstName = loggedInUser.getFirstName() ?? "";
+                string lastName = loggedInUser.getLastName() ?? "";
+                string fullName = $"{firstName} {lastName}".Trim();
+
+                if (btnSettings != null)
+                {
+                    // Set full name for the TextBlock
+                    btnSettings.Content = string.IsNullOrWhiteSpace(fullName) ? "Tenant" : fullName;
+
+                    // Set first letter for the circle avatar (e.g. "K" for Kimy)
+                    btnSettings.Tag = !string.IsNullOrEmpty(firstName) ? firstName[0].ToString().ToUpper() : "U";
+                }
+
+                // Reload initial page with loggedInUser context
+                MainContentFrame.Content = new TenantOverviewPage(this.loggedInUser);
+            }
+        }
         private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
         {
             _sidebarCollapsed = !_sidebarCollapsed;
@@ -42,30 +66,35 @@ namespace RentalManagementSystem.Presentation
             var nav = sender as RadioButton;
             if (nav == null) return;
 
-            txtPageTitle.Text = nav.Content?.ToString();
+            // Header title: Displays "Profile" for btnSettings, otherwise uses Content
+            txtPageTitle.Text = nav.Name == nameof(btnSettings) ? "Profile" : nav.Content?.ToString();
 
-            // Start every page with an empty search box
-            txtSearch.Clear();
+            if (txtSearch != null)
+            {
+                txtSearch.Clear();
+            }
 
-            // The top search bar is hidden on the Profile page
-            SearchBar.Visibility = nav.Name == nameof(btnSettings)
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+            if (SearchBar != null)
+            {
+                SearchBar.Visibility = nav.Name == nameof(btnSettings)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+            }
 
+            // Pass loggedInUser into child pages on navigation
             MainContentFrame.Content = nav.Name switch
             {
-                nameof(btnOverview) => new TenantOverviewPage(),
-                nameof(btnReservations) => new TenantReservationsPage(),
-                nameof(btnBilling) => new TenantBillingPage(),
-                nameof(btnSettings) => new TenantProfilePage(),    // opened by the profile card at the bottom of the sidebar
+                nameof(btnOverview) => new TenantOverviewPage(loggedInUser),
+                nameof(btnReservations) => new TenantReservationsPage(loggedInUser),
+                nameof(btnBilling) => new TenantBillingPage(loggedInUser),
+                nameof(btnSettings) => new TenantProfilePage(loggedInUser),
                 _ => MainContentFrame.Content
             };
         }
 
-        // Sends what you type in the top search bar to the page that is open
         private void Search_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (MainContentFrame == null) return;
+            if (MainContentFrame?.Content == null) return;
 
             switch (MainContentFrame.Content)
             {
@@ -88,17 +117,14 @@ namespace RentalManagementSystem.Presentation
                 "Confirm Logout",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question,
-                MessageBoxResult.No);          // "No" is the default so Enter doesn't log you out by accident
+                MessageBoxResult.No);
 
             if (result != MessageBoxResult.Yes)
                 return;
 
-            // If you keep any session or current-user state, clear it here
-            // e.g. SessionManager.CurrentUser = null;
-
             var landing = new LandingPage();
-            landing.Show();                    // open the landing page first...
-            this.Close();                      // ...then close the dashboard
+            landing.Show();
+            this.Close();
         }
     }
 }

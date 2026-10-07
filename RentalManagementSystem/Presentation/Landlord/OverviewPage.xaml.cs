@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RentalManagementSystem.Model;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -48,6 +49,7 @@ public partial class OverviewPage : UserControl
     private static readonly string[] ReportNames = { "Rental Report", "Payment Report", "Occupancy / Unit Status" };
 
     private string _query = "";   // text from the Dashboard's top search bar
+    private User loggedInUser;
 
     public OverviewPage()
     {
@@ -55,6 +57,11 @@ public partial class OverviewPage : UserControl
         StartPicker.SelectedDate = DateTime.Today.AddDays(-45);
         EndPicker.SelectedDate = DateTime.Today;
         Generate();
+    }
+
+    public OverviewPage(User loggedInUser)
+    {
+        this.loggedInUser = loggedInUser;
     }
 
     private void GenerateButton_Click(object sender, RoutedEventArgs e) => Generate();

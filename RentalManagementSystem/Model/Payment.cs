@@ -4,13 +4,13 @@ namespace RentalManagementSystem.Model
 {
     public class Payment
     {
+        public User UserId { get; set; }
         // Auto-properties replacing Java fields and getters/setters
         public int PaymentId { get; set; }
 
         // What this payment is for (fill ONE of the first two)
         public int? BillId { get; set; }           // paying a bill
         public int? ReservationId { get; set; }    // paying a reservation down payment (no bill yet)
-        public User? UserId { get; set; }           // staff who received the payment
 
         public DateTime PaymentDate { get; set; } = DateTime.Now;
         public decimal Amount { get; set; }
@@ -29,12 +29,13 @@ namespace RentalManagementSystem.Model
             DateTime paymentDate,
             decimal amount,
             string paymentMethod,
-            string referenceNumber)
+            string referenceNumber, User _user)
         {
             PaymentId = paymentId;
             PaymentDate = paymentDate;
             Amount = amount;
             PaymentMethod = paymentMethod;
+            UserId = _user;
             ReferenceNumber = referenceNumber;
         }
     }

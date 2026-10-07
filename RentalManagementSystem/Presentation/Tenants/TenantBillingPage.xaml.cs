@@ -1,3 +1,4 @@
+using RentalManagementSystem.Model;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -29,24 +30,8 @@ namespace RentalManagementSystem.Presentation
     // Uses the InvoiceRow class already defined in BillingPage.xaml.cs (same namespace).
     public partial class TenantBillingPage : UserControl
     {
-        private const string TenantName = "Juan Dela Cruz";
-
-        // Only this tenant's invoices (replace with a database/DAO query filtered by the logged-in tenant).
-        private readonly ObservableCollection<InvoiceRow> _invoices = new ObservableCollection<InvoiceRow>
-        {
-            new InvoiceRow { InvoiceNo = "INV-2010", Renter = TenantName, Unit = "Unit 101", Period = "Nov 2026", DueDate = "Nov 05, 2026", Amount = 12500, Status = "Pending" },
-            new InvoiceRow { InvoiceNo = "INV-2001", Renter = TenantName, Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" },
-            new InvoiceRow { InvoiceNo = "INV-1993", Renter = TenantName, Unit = "Unit 101", Period = "Sep 2026", DueDate = "Sep 05, 2026", Amount = 12500, Status = "Paid" },
-            new InvoiceRow { InvoiceNo = "INV-1985", Renter = TenantName, Unit = "Unit 101", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 12500, Status = "Paid" },
-        };
-
-        // Payment history, newest first (replace with a database/DAO query for the logged-in tenant).
-        private readonly ObservableCollection<TenantPayment> _payments = new ObservableCollection<TenantPayment>
-        {
-            new TenantPayment { ReceiptNo = "RCT-3001", InvoiceNo = "INV-2001", Period = "Oct 2026", DatePaid = new DateTime(2026, 10, 3), Method = "GCash",         Reference = "GC-88421390", Amount = 12500 },
-            new TenantPayment { ReceiptNo = "RCT-2951", InvoiceNo = "INV-1993", Period = "Sep 2026", DatePaid = new DateTime(2026, 9, 4),  Method = "Bank Transfer", Reference = "BT-55120934", Amount = 12500 },
-            new TenantPayment { ReceiptNo = "RCT-2890", InvoiceNo = "INV-1985", Period = "Aug 2026", DatePaid = new DateTime(2026, 8, 5),  Method = "Cash",          Reference = "—",           Amount = 12500 },
-        };
+        private readonly ObservableCollection<InvoiceRow> _invoices = new ObservableCollection<InvoiceRow>();
+        private readonly ObservableCollection<TenantPayment> _payments = new ObservableCollection<TenantPayment>();
 
         private int _nextReceipt = 3002;
 
@@ -54,6 +39,8 @@ namespace RentalManagementSystem.Presentation
         private ICollectionView _historyView = null!;
         private string _statusFilter = "All";
         private string _globalSearchQuery = "";
+
+        public User LoggedInUser { get; private set; }
 
         public TenantBillingPage()
         {
@@ -67,6 +54,45 @@ namespace RentalManagementSystem.Presentation
             _historyView.Filter = MatchesPayment;
             dgHistory.ItemsSource = _historyView;
 
+            LoadData();
+        }
+
+        // Chaining : this() ensures InitializeComponent() and controls load before assigning user
+        public TenantBillingPage(User loggedInUser) : this()
+        {
+            LoggedInUser = loggedInUser;
+            LoadData(); // Reload invoices and payments for the logged-in tenant
+        }
+
+        public string GetTenantName()
+        {
+            if (LoggedInUser != null)
+            {
+                string name = $"{LoggedInUser.getFirstName()} {LoggedInUser.getLastName()}".Trim();
+                if (!string.IsNullOrWhiteSpace(name))
+                    return name;
+            }
+            return "Juan Dela Cruz";
+        }
+
+        private void LoadData()
+        {
+            string tenantName = GetTenantName();
+
+            // Replace with database / DAO query filtered by LoggedInUser.getUserId()
+            _invoices.Clear();
+            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2010", Renter = tenantName, Unit = "Unit 101", Period = "Nov 2026", DueDate = "Nov 05, 2026", Amount = 12500, Status = "Pending" });
+            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2001", Renter = tenantName, Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" });
+            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1993", Renter = tenantName, Unit = "Unit 101", Period = "Sep 2026", DueDate = "Sep 05, 2026", Amount = 12500, Status = "Paid" });
+            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1985", Renter = tenantName, Unit = "Unit 101", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 12500, Status = "Paid" });
+
+            _payments.Clear();
+            _payments.Add(new TenantPayment { ReceiptNo = "RCT-3001", InvoiceNo = "INV-2001", Period = "Oct 2026", DatePaid = new DateTime(2026, 10, 3), Method = "GCash", Reference = "GC-88421390", Amount = 12500 });
+            _payments.Add(new TenantPayment { ReceiptNo = "RCT-2951", InvoiceNo = "INV-1993", Period = "Sep 2026", DatePaid = new DateTime(2026, 9, 4), Method = "Bank Transfer", Reference = "BT-55120934", Amount = 12500 });
+            _payments.Add(new TenantPayment { ReceiptNo = "RCT-2890", InvoiceNo = "INV-1985", Period = "Aug 2026", DatePaid = new DateTime(2026, 8, 5), Method = "Cash", Reference = "—", Amount = 12500 });
+
+            _view?.Refresh();
+            _historyView?.Refresh();
             UpdateSummary();
         }
 
@@ -83,7 +109,6 @@ namespace RentalManagementSystem.Presentation
 
         private void Tab_Checked(object sender, RoutedEventArgs e)
         {
-            // Fires once during InitializeComponent, before the later elements exist.
             if (FilterBar == null || dgInvoices == null || dgHistory == null || txtHistoryTotal == null) return;
 
             bool showHistory = tabHistory.IsChecked == true;
@@ -134,6 +159,8 @@ namespace RentalManagementSystem.Presentation
 
         private void UpdateSummary()
         {
+            if (txtPaid == null) return;
+
             var paid = _invoices.Where(i => i.Status == "Paid").ToList();
             var pending = _invoices.Where(i => i.Status == "Pending").ToList();
             var overdue = _invoices.Where(i => i.Status == "Overdue").ToList();
@@ -158,7 +185,6 @@ namespace RentalManagementSystem.Presentation
 
         // ---------- Buttons ----------
 
-        // Pays the oldest unpaid invoice (overdue first, then pending).
         private void PayNextDue_Click(object sender, RoutedEventArgs e)
         {
             var next = _invoices.FirstOrDefault(i => i.Status == "Overdue")
@@ -190,9 +216,6 @@ namespace RentalManagementSystem.Presentation
 
             if (result != MessageBoxResult.Yes) return;
 
-            // TODO: process the payment through your payment gateway / DAO here,
-            // and only mark the invoice as paid once it succeeds. Use the gateway's
-            // real method and reference number below.
             inv.Status = "Paid";
 
             var payment = new TenantPayment
@@ -205,7 +228,7 @@ namespace RentalManagementSystem.Presentation
                 Reference = "REF-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
                 Amount = inv.Amount
             };
-            _payments.Insert(0, payment);   // newest first
+            _payments.Insert(0, payment);
 
             _view.Refresh();
             _historyView.Refresh();
@@ -223,10 +246,12 @@ namespace RentalManagementSystem.Presentation
         private void Receipt_Click(object sender, RoutedEventArgs e)
         {
             if (((FrameworkElement)sender).DataContext is TenantPayment p)
+            {
                 MessageBox.Show(
                     $"Receipt {p.ReceiptNo}\n\nInvoice: {p.InvoiceNo} ({p.Period})\nPaid on: {p.DatePaidText}\n" +
-                    $"Method: {p.Method}\nReference: {p.Reference}\nAmount: {p.AmountText}\n\nPaid by: {TenantName}",
+                    $"Method: {p.Method}\nReference: {p.Reference}\nAmount: {p.AmountText}\n\nPaid by: {GetTenantName()}",
                     "Payment receipt");
+            }
         }
     }
 }

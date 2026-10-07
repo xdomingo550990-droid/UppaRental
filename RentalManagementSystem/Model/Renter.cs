@@ -2,26 +2,38 @@
 
 namespace RentalManagementSystem.Model
 {
-    public class Renter
+    public class Renter : User
     {
-        // Auto-properties with string.Empty initializers to prevent CS8618 warnings
-        public int RenterId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Contact { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;       // Renters and Reservation forms
+        // Aliases linked directly to base User properties
+        public int RenterId
+        {
+            get => UserId;
+            set => UserId = value;
+        }
+
+        public string Contact
+        {
+            get => Phone;
+            set => Phone = value;
+        }
+
         public string Address { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
+        public RentalTerm TermRent { get; set; } = new RentalTerm();
 
-        // Parameterless Constructor (for WPF data binding)
-        public Renter() { }
+        // Parameterless Constructor
+        public Renter()
+        {
+            Role = Role.Tenant;
+        }
 
-        // Parameterized Constructor (your original four fields)
+        // Parameterized Constructor
         public Renter(int renterId, string name, string contact, string address)
         {
-            RenterId = renterId;
-            Name = name;
-            Contact = contact;
+            UserId = renterId;
+            FullName = name;
+            Phone = contact;
             Address = address;
+            Role = Role.Tenant;
         }
     }
 }

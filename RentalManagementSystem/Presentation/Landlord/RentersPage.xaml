@@ -223,20 +223,76 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
+            <!-- Light "Property / Unit" filter box that sits above the table -->
+            <Style x:Key="FilterBox" TargetType="Border">
+                <Setter Property="Height" Value="30"/>
+                <Setter Property="Width" Value="200"/>
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="BorderBrush" Value="#C5D4C9"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="ClipToBounds" Value="True"/>
+            </Style>
+
+            <!-- Slim Unpaid | Paid switch (same look as the New Renter | Reservation switch) -->
+            <Style x:Key="PayTab" TargetType="RadioButton">
+                <Setter Property="Foreground" Value="#CFE0D3"/>
+                <Setter Property="FontSize" Value="12.5"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="bd" CornerRadius="6" Padding="18,3" Background="Transparent">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                  RecognizesAccessKey="False"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="#1FFFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="White"/>
+                                    <Setter Property="Foreground" Value="#1C3527"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- 1. Header -->
-            <RowDefinition Height="Auto"/> <!-- 2. Renter / Reservation form panel -->
-            <RowDefinition Height="*"/>    <!-- 3. Table card (Filters + DataGrid) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1. Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Renter / Reservation form panel -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Table card (Filters + DataGrid) -->
         </Grid.RowDefinitions>
 
-        <!-- 1. Header -->
-        <TextBlock Grid.Row="0" Text="Manage tenant profiles, reservations, lease periods, and rent status."
-                   Style="{StaticResource PageSubtitle}" FontWeight="SemiBold" Foreground="#1E3223"
-                   Margin="0,0,0,16"/>
+        <!-- 1. Header + Property / Unit filter -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Manage tenant profiles, reservations, lease periods, and rent status."
+                       Style="{StaticResource PageSubtitle}" FontWeight="SemiBold" Foreground="#1E3223"
+                       VerticalAlignment="Center" Margin="0"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="Property / Unit" FontSize="12" FontWeight="SemiBold" Foreground="#1E3223"
+                           VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <Border Style="{StaticResource FilterBox}">
+                    <ComboBox x:Name="UnitFilterCombo" Style="{StaticResource FormCombo}"
+                              SelectionChanged="UnitFilter_Changed"/>
+                </Border>
+            </StackPanel>
+        </Grid>
 
         <!-- 2. Inline form panel + divider -->
         <StackPanel Grid.Row="1" Margin="0,0,0,16">
@@ -341,9 +397,10 @@
                                     </Border>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Lease Status" Style="{StaticResource FormLabel}"/>
+                                    <TextBlock Text="Rental Term" Style="{StaticResource FormLabel}"/>
                                     <Border Style="{StaticResource FormBox}">
-                                        <ComboBox x:Name="StatusCombo" Style="{StaticResource FormCombo}"/>
+                                        <ComboBox x:Name="TermCombo" Style="{StaticResource FormCombo}"
+                                                  SelectionChanged="Term_Changed"/>
                                     </Border>
                                 </StackPanel>
                             </Grid>
@@ -367,10 +424,23 @@
                                 </Grid>
                             </StackPanel>
 
-                            <StackPanel Margin="0,0,0,8">
-                                <TextBlock x:Name="RentLabel" Text="Monthly Rent (&#x20B1;)" Style="{StaticResource FormLabel}"/>
-                                <TextBox x:Name="RentBox" Style="{StaticResource FormInput}" TextChanged="Rent_TextChanged"/>
-                            </StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock x:Name="RentLabel" Text="Monthly Rent (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                    <TextBox x:Name="RentBox" Style="{StaticResource FormInput}" TextChanged="Rent_TextChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Lease Status" Style="{StaticResource FormLabel}"/>
+                                    <Border Style="{StaticResource FormBox}">
+                                        <ComboBox x:Name="StatusCombo" Style="{StaticResource FormCombo}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
 
                         <!-- divider -->
@@ -398,16 +468,44 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <TextBlock x:Name="DeleteText" Text="Delete Renter" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="DeleteText" Text="Move Out Renter" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
 
-                            <TextBlock Text="Delete removes the record selected in the table."
+                            <TextBlock x:Name="ArchiveHint" Text="Move Out archives the selected record and frees the unit. Nothing is erased."
                                        FontSize="11" Foreground="#A9C2B0" TextWrapping="Wrap" Margin="2,2,0,0"/>
                         </StackPanel>
                     </Grid>
 
-                    <!-- Reservation only: total rent and the 20% downpayment -->
+                    <!-- Reservation only: payment received + hold-until date -->
+                    <Grid x:Name="ReservationFields" Visibility="Collapsed" Margin="0,4,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="1.15*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="176"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Payment Received" Style="{StaticResource FormLabel}"/>
+                            <Border Background="#26FFFFFF" CornerRadius="8" Padding="3" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="rbPayUnpaid" Content="Unpaid" GroupName="ResPay" IsChecked="True"
+                                                 Style="{StaticResource PayTab}"/>
+                                    <RadioButton x:Name="rbPayPaid" Content="Paid" GroupName="ResPay"
+                                                 Style="{StaticResource PayTab}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Hold Until / Expiry Date" Style="{StaticResource FormLabel}"/>
+                            <Border Style="{StaticResource FormBox}">
+                                <DatePicker x:Name="HoldPicker"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Reservation only: total rent (and the 20% downpayment for long-term) -->
                     <Border x:Name="ReservationStrip" Visibility="Collapsed" Margin="0,4,0,8" Padding="14,9"
                             Background="#1FD9B45A" BorderBrush="#4DD9B45A" BorderThickness="1" CornerRadius="8">
                         <Grid>
@@ -418,14 +516,47 @@
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <TextBlock x:Name="ResTotalText" FontSize="12.5" FontWeight="SemiBold"
                                            Foreground="#F0E2B0" TextWrapping="Wrap"/>
-                                <TextBlock Text="A 20% downpayment is required to reserve the unit."
+                                <TextBlock x:Name="ResNoteText" Text="A 20% downpayment is required to reserve the unit."
                                            FontSize="11" Foreground="#A9C2B0" Margin="0,2,0,0"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <StackPanel x:Name="DownPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
                                 <TextBlock Text="Downpayment (20%)" FontSize="12" Foreground="#CFE0D3"
                                            VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <TextBlock x:Name="ResDownText" FontSize="18" FontWeight="Bold" Foreground="#D9B45A"
                                            VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- New Renter only: move-in payments -->
+                    <Border x:Name="MoveInStrip" Margin="0,4,0,8" Padding="14,10"
+                            Background="#1FD9B45A" BorderBrush="#4DD9B45A" BorderThickness="1" CornerRadius="8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="14"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="24"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock x:Name="AdvanceLabel" Text="1 Month Advance (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="AdvanceBox" Style="{StaticResource FormInput}" TextChanged="Money_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Security Deposit (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="DepositBox" Style="{StaticResource FormInput}" TextChanged="Money_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Less: Reservation Credit (&#x20B1;)" Style="{StaticResource FormLabel}"/>
+                                <TextBox x:Name="CreditBox" Style="{StaticResource FormInput}" TextChanged="Money_TextChanged"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="6" VerticalAlignment="Bottom" MinWidth="120">
+                                <TextBlock Text="Due at move-in" FontSize="11" Foreground="#CFE0D3" HorizontalAlignment="Right"/>
+                                <TextBlock x:Name="NetDueText" FontSize="18" FontWeight="Bold" Foreground="#D9B45A"
+                                           HorizontalAlignment="Right"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -502,14 +633,14 @@
                         <DataGridTextColumn Header="CONTACT" Binding="{Binding Contact}" Width="140"/>
                         <DataGridTextColumn Header="LEASE PERIOD" Binding="{Binding LeasePeriod}" Width="*"/>
 
-                        <!-- Reservations also show their 20% downpayment under the rent -->
-                        <DataGridTemplateColumn Header="MONTHLY RENT" Width="150">
+                        <!-- Sub-line: 20% downpayment, short-term days, or unpaid balance -->
+                        <DataGridTemplateColumn Header="RATE" Width="175">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="{Binding RentText}"/>
-                                        <TextBlock Text="{Binding DownText}" FontSize="11" Foreground="#7A5A12"
-                                                   Visibility="{Binding IsReservation, Converter={StaticResource B2V}}"/>
+                                        <TextBlock Text="{Binding SubText}" FontSize="11" Foreground="#7A5A12"
+                                                   Visibility="{Binding HasSubText, Converter={StaticResource B2V}}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -524,12 +655,18 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="ACTIONS" Width="110">
+                        <DataGridTemplateColumn Header="ACTIONS" Width="230">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
                                         <Button Content="Edit" Style="{StaticResource LinkButton}" Click="Edit_Click"/>
+                                        <Button Content="Move-In" Style="{StaticResource LinkButton}" Click="Promote_Click"
+                                                ToolTip="Promote to an Active renter"
+                                                Visibility="{Binding CanPromote, Converter={StaticResource B2V}}"/>
+                                        <Button Content="Move Out" Style="{StaticResource LinkButton}" Click="MoveOut_Click"
+                                                Foreground="#B94A48" ToolTip="Terminate the lease and archive the renter"
+                                                Visibility="{Binding CanMoveOut, Converter={StaticResource B2V}}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

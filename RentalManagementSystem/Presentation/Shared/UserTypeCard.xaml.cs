@@ -1,3 +1,4 @@
+using RentalManagementSystem.ViewModel;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +19,7 @@ namespace RentalManagementSystem.Presentation
         public UserTypeCard()
         {
             InitializeComponent();
+            DataContext = new UserViewModel();
         }
 
         /// <summary>Clears the selection (call this each time the card is shown).</summary>

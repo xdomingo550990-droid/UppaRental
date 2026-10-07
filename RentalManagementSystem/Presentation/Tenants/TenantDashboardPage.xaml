@@ -89,9 +89,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
-        <!-- Bottom profile card: a RadioButton in the same group as the nav items,
-             so clicking it opens the Profile page and it highlights while Profile is open. -->
         <Style x:Key="ProfileCardStyle" TargetType="RadioButton">
             <Setter Property="GroupName" Value="MainNav"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -100,14 +97,17 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="bg" Background="#1AFFFFFF" CornerRadius="14" Padding="6"
-                                BorderBrush="Transparent" BorderThickness="1">
+                        BorderBrush="Transparent" BorderThickness="1">
                             <StackPanel Orientation="Horizontal">
+                                <!-- Avatar Initial Circle -->
                                 <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
-                                    <TextBlock Text="J" Foreground="White" FontWeight="Bold" FontSize="14"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <!-- Binds to Tag property for the Avatar Initial -->
+                                    <TextBlock Text="{TemplateBinding Tag}" Foreground="White" FontWeight="Bold" FontSize="14"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Juan Dela Cruz" FontWeight="Bold" FontSize="13" Foreground="White"/>
+                                    <!-- Binds to Content property for the Full Name -->
+                                    <TextBlock Text="{TemplateBinding Content}" FontWeight="Bold" FontSize="13" Foreground="White"/>
                                     <TextBlock Text="Tenant" FontSize="11" Foreground="#A9BFAE"/>
                                 </StackPanel>
                             </StackPanel>

@@ -1,3 +1,5 @@
+using RentalManagementSystem.Model;
+using RentalManagementSystem.ViewModel;
 using System;
 using System.Linq;
 using System.Windows;
@@ -26,6 +28,7 @@ namespace RentalManagementSystem.Presentation
         public AuthCard()
         {
             InitializeComponent();
+            this.DataContext = new UserViewModel();
         }
 
         /// <summary>Shows the card instantly in Login or Register mode (no animation).</summary>
@@ -140,38 +143,95 @@ namespace RentalManagementSystem.Presentation
             string password = GetPassword(RegPassword, RegPasswordPlain);
             string confirm = GetPassword(RegConfirmPassword, RegConfirmPasswordPlain);
 
-            if (RegUsername.Text.Trim().Length == 0 || RegEmail.Text.Trim().Length == 0 ||
-                password.Length == 0 || confirm.Length == 0)
+            // 1. Validate empty inputs
+            if (string.IsNullOrWhiteSpace(RegUsername.Text) ||
+                string.IsNullOrWhiteSpace(RegEmail.Text) ||
+                string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(confirm))
             {
-                MessageBox.Show("Please fill in all fields.", "Registration");
+                MessageBox.Show("Please fill in all fields.", "Registration", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
+            // 2. Validate password match
             if (password != confirm)
             {
                 RegMessage.Text = "Passwords do not match.";
                 RegMessage.Visibility = Visibility.Visible;
                 return;
             }
+
             RegMessage.Visibility = Visibility.Collapsed;
 
-            // TODO: save the new user via your Service/DAO (use the 'password' variable above)
-            MessageBox.Show("Account created! You can now log in.", "Registration");
-            Slide(toLogin: true);
+            // 3. Sync to ViewModel and save
+            if (DataContext is UserViewModel vm)
+            {
+                vm.Username = RegUsername.Text.Trim();
+                vm.EmailAddress = RegEmail.Text.Trim();
+                vm.Password = password;
+
+                vm.SaveUserToDatabase();
+
+                // 4. Navigate to Login after successful registration
+                Slide(toLogin: true);
+            }
+        }
+
+        private void Password_Changed(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is UserViewModel vm && sender is PasswordBox pbox)
+            {
+                vm.Password = pbox.Password;
+            }
+
+            Field_Changed(sender, e);
         }
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
             string password = GetPassword(LoginPassword, LoginPasswordPlain);
+            string username = LoginUsername.Text.Trim();
 
-            if (LoginUsername.Text.Trim().Length == 0 || password.Length == 0)
+            if (DataContext is UserViewModel vm)
             {
-                MessageBox.Show("Enter your username and password.", "Login");
-                return;
-            }
+                vm.Username = username;
+                vm.Password = password;
 
-            // TODO: validate the credentials via your Service/DAO (use the 'password' variable above); only raise on success
-            LoginSucceeded?.Invoke(this, EventArgs.Empty);
+                // Perform login check against database
+                if (vm.AuthenticateUser(username, password))
+                {
+                    LoginSucceeded?.Invoke(this, EventArgs.Empty);
+
+                    // Fetch authenticated user model
+                    Model.User loggedInUser = vm.CurrentUser;
+
+                    if (loggedInUser != null)
+                    {
+                        if (loggedInUser.getRole() == Role.Tenant)
+                        {
+                            // Pass authenticated user into TenantDashboardPage
+                            TenantDashboardPage dashboard = new TenantDashboardPage(loggedInUser);
+                            dashboard.Show();
+
+                            // Close login window
+                            Window.GetWindow(this)?.Close();
+                        }
+                        else if (loggedInUser.getRole() == Role.Landlord)
+                        {
+                            // Pass authenticated user into Landlord DashboardPage Window
+                            DashboardPage adminDashboard = new DashboardPage(loggedInUser);
+                            adminDashboard.Show();
+
+                            // Close login window
+                            Window.GetWindow(this)?.Close();
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Invalid username or password.", "Login Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) =>

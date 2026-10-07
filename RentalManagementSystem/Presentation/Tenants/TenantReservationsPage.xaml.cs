@@ -1,3 +1,4 @@
+using RentalManagementSystem.Model;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -64,6 +65,7 @@ namespace RentalManagementSystem.Presentation
         private ICollectionView _view = null!;
         private string _statusFilter = "All";
         private string _globalSearchQuery = "";
+        private User loggedInUser;
 
         public TenantReservationsPage()
         {
@@ -74,6 +76,11 @@ namespace RentalManagementSystem.Presentation
             dgReservations.ItemsSource = _view;
 
             UpdateSummary();
+        }
+
+        public TenantReservationsPage(User loggedInUser)
+        {
+            this.loggedInUser = loggedInUser;
         }
 
         // ---------- Global Search Hook (the dashboard's top search bar) ----------

@@ -201,15 +201,19 @@
                                FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,16"/>
 
                 <Grid Margin="0,0,0,10">
+                    <!-- Username -->
                     <TextBox x:Name="RegUsername" Style="{StaticResource FieldTextBox}"
-                                 Tag="{Binding ElementName=RegUsernameHint}" TextChanged="Field_Changed"/>
+         Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+         Tag="{Binding ElementName=RegUsernameHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="RegUsernameHint" Text="Username" Style="{StaticResource HintText}"/>
                     <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
                 <Grid Margin="0,0,0,10">
+                    <!-- Email -->
                     <TextBox x:Name="RegEmail" Style="{StaticResource FieldTextBox}"
-                                 Tag="{Binding ElementName=RegEmailHint}" TextChanged="Field_Changed"/>
+         Text="{Binding EmailAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+         Tag="{Binding ElementName=RegEmailHint}" TextChanged="Field_Changed"/>
                     <TextBlock x:Name="RegEmailHint" Text="Email" Style="{StaticResource HintText}"/>
                     <TextBlock Text="&#xE715;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
@@ -218,10 +222,12 @@
                 <Grid Margin="0,0,0,10">
                     <PasswordBox x:Name="RegPassword" Style="{StaticResource FieldPasswordBox}"
                                      Tag="{Binding ElementName=RegPasswordHint}" PasswordChanged="Field_Changed"/>
+
+                    <!-- Plaintext Password (when eye toggle is active) -->
                     <TextBox x:Name="RegPasswordPlain" Style="{StaticResource FieldTextBox}"
-                                 Visibility="Collapsed"
-                                 Tag="{Binding ElementName=RegPasswordHint}" TextChanged="Field_Changed"/>
-                    <TextBlock x:Name="RegPasswordHint" Text="Password" Style="{StaticResource HintText}"/>
+                     Visibility="Collapsed"
+                     Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     Tag="{Binding ElementName=RegPasswordHint}" TextChanged="Field_Changed"/>  
                     <ToggleButton Style="{StaticResource EyeToggle}" Click="TogglePassword_Click"/>
                 </Grid>
 
@@ -240,7 +246,9 @@
                                FontWeight="SemiBold" Foreground="#C84B41" TextWrapping="Wrap"
                                TextAlignment="Center" Margin="0,0,0,8" Visibility="Collapsed"/>
 
-                <Button Content="Register" Style="{StaticResource PrimaryButton}" Click="Register_Click"/>
+                <!-- Register Button -->
+                <Button Content="Register" Style="{StaticResource PrimaryButton}" 
+        Click="Register_Click"/>
             </StackPanel>
 
             <!-- ============ LOGIN FORM (right) ============ -->
@@ -250,23 +258,27 @@
                                FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
                 <Grid Margin="0,0,0,12">
+                    <!-- Username -->
                     <TextBox x:Name="LoginUsername" Style="{StaticResource FieldTextBox}"
-                                 Tag="{Binding ElementName=LoginUsernameHint}" TextChanged="Field_Changed"/>
-                    <TextBlock x:Name="LoginUsernameHint" Text="Username" Style="{StaticResource HintText}"/>
+         Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+         Tag="{Binding ElementName=LoginUsernameHint}" TextChanged="Field_Changed"/>
+                    <!-- Plaintext Password -->
+                    <TextBox x:Name="LoginPasswordPlain" Style="{StaticResource FieldTextBox}"
+         Visibility="Collapsed"
+         Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+         Tag="{Binding ElementName=LoginPasswordHint}" TextChanged="Field_Changed"/>
                     <TextBlock Text="&#xE77B;" Style="{StaticResource FieldIcon}"/>
                 </Grid>
 
                 <Grid Margin="0,0,0,16">
                     <PasswordBox x:Name="LoginPassword" Style="{StaticResource FieldPasswordBox}"
                                      Tag="{Binding ElementName=LoginPasswordHint}" PasswordChanged="Field_Changed"/>
-                    <TextBox x:Name="LoginPasswordPlain" Style="{StaticResource FieldTextBox}"
-                                 Visibility="Collapsed"
-                                 Tag="{Binding ElementName=LoginPasswordHint}" TextChanged="Field_Changed"/>
-                    <TextBlock x:Name="LoginPasswordHint" Text="Password" Style="{StaticResource HintText}"/>
-                    <ToggleButton Style="{StaticResource EyeToggle}" Click="TogglePassword_Click"/>
+
                 </Grid>
 
-                <Button Content="Login" Style="{StaticResource PrimaryButton}" Click="Login_Click"/>
+                <!-- Login Button -->
+                <Button Content="Login" Style="{StaticResource PrimaryButton}" 
+                 Click="Login_Click"/>
             </StackPanel>
 
             <!-- ============ SLIDING OVERLAY ============ -->

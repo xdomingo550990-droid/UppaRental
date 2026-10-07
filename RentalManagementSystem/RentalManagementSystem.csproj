@@ -25,10 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Service\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Guna.UI2.WinForms" Version="2.0.4.8" />
     <PackageReference Include="MySql.Data" Version="26.7.0" />
   </ItemGroup>

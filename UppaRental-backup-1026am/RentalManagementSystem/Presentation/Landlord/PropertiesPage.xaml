@@ -1,0 +1,140 @@
+﻿<UserControl x:Class="RentalManagementSystem.Presentation.UnitsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:RentalManagementSystem.Presentation"
+             mc:Ignorable="d"
+             local:Manage.ActionsVisibility="Visible"
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/PageStyles.xaml"/>
+                <ResourceDictionary Source="/Resources/PropertyCardStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- List / Gallery switch -->
+            <Style x:Key="ViewToggle" TargetType="RadioButton">
+                <Setter Property="GroupName" Value="ViewMode"/>
+                <Setter Property="Foreground" Value="#5C7060"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="seg" Background="Transparent" CornerRadius="8" Padding="16,0" Height="32">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="seg" Property="Background" Value="#1E3223"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- View switch + search -->
+            <RowDefinition Height="Auto"/>
+            <!-- Category chips + Add Property -->
+            <RowDefinition Height="*"/>
+            <!-- Content -->
+        </Grid.RowDefinitions>
+
+        <!-- 1. View switch + search -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16" Padding="12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="16"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="#F0F4F1" CornerRadius="10" Padding="4" Height="40">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton x:Name="rbList" Content="☰  List view" IsChecked="True"
+                                     Style="{StaticResource ViewToggle}" Checked="View_Checked"/>
+                        <RadioButton x:Name="rbGallery" Content="▦  Gallery view"
+                                     Style="{StaticResource ViewToggle}" Checked="View_Checked"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource InputBorder}" Height="40">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#607464"
+                                   VerticalAlignment="Center" Margin="14,0,0,0"/>
+                        <TextBox x:Name="txtSearch" Grid.Column="1" Style="{StaticResource PlainTextBox}"
+                                 TextChanged="Search_TextChanged"/>
+                        <TextBlock Grid.Column="1" Text="Search name, location, status or description..." IsHitTestVisible="False"
+                                   Foreground="#8C9E90" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=txtSearch}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 2. Category chips (left) + Add Property button (right), same level -->
+        <Grid Grid.Row="1" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <WrapPanel Grid.Column="0">
+                <RadioButton Style="{StaticResource ChipStyle}" Content="All" Tag="All" IsChecked="True" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Available" Tag="Available" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Reserved" Tag="Reserved" Checked="Category_Checked"/>
+                <RadioButton Style="{StaticResource ChipStyle}" Content="Occupied" Tag="Occupied" Checked="Category_Checked"/>
+            </WrapPanel>
+
+            <Button Grid.Column="1" Content="+ Add Property" Style="{StaticResource PrimaryButton}"
+                    VerticalAlignment="Top" Margin="16,0,0,10" Click="AddProperty_Click"/>
+        </Grid>
+
+        <!-- 3. Content: list view (text) or gallery view (photos).
+                Button.Click catches Read more / Edit / Delete from inside the templates. -->
+        <Grid Grid.Row="2">
+            <ScrollViewer x:Name="scrList" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="icListSections" Margin="0,0,8,16"
+                              ItemTemplate="{StaticResource ListSectionTemplate}"
+                              Button.Click="Item_Click"/>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="scrGallery" Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl x:Name="icGallerySections" Margin="0,0,8,16"
+                              ItemTemplate="{StaticResource GallerySectionTemplate}"
+                              Button.Click="Item_Click"/>
+            </ScrollViewer>
+
+            <TextBlock x:Name="txtEmpty" Text="No properties match this category or search."
+                       FontSize="14" Foreground="#607464" HorizontalAlignment="Center" VerticalAlignment="Top"
+                       Margin="0,40,0,0" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</UserControl>

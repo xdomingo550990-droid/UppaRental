@@ -1,68 +1,66 @@
+using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
+using RentalManagementSystem.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace RentalManagementSystem.Presentation
 {
-    /// <summary>One entry in the tenant's payment history (a receipt).</summary>
-    public class TenantPayment
+    public partial class TenantBillingPage : UserControl
     {
         private static readonly CultureInfo Us = CultureInfo.GetCultureInfo("en-US");
 
-        public string ReceiptNo { get; set; } = "";
-        public string InvoiceNo { get; set; } = "";
-        public string Period { get; set; } = "";
-        public DateTime DatePaid { get; set; }
-        public string Method { get; set; } = "";
-        public string Reference { get; set; } = "";
-        public decimal Amount { get; set; }
+        // Invoices remain managed locally or via an InvoiceViewModel
+        private readonly ObservableCollection<InvoiceRow> _invoices = new();
 
-        public string DatePaidText => DatePaid.ToString("MMM dd, yyyy", Us);
-        public string AmountText => "₱" + Amount.ToString("N2", Us);
-    }
+        // Payment history is delegated to the view model
+        public PaymentHistoryViewModel PaymentHistoryVm { get; } = new PaymentHistoryViewModel();
 
-    // Uses the InvoiceRow class already defined in BillingPage.xaml.cs (same namespace).
-    public partial class TenantBillingPage : UserControl
-    {
-        private readonly ObservableCollection<InvoiceRow> _invoices = new ObservableCollection<InvoiceRow>();
-        private readonly ObservableCollection<TenantPayment> _payments = new ObservableCollection<TenantPayment>();
-
-        private int _nextReceipt = 3002;
-
-        private ICollectionView _view = null!;
-        private ICollectionView _historyView = null!;
+        private ICollectionView? _view;      // nullable: Filter_Checked can fire during InitializeComponent
         private string _statusFilter = "All";
-        private string _globalSearchQuery = "";
 
-        public User LoggedInUser { get; private set; }
+        public User? LoggedInUser { get; }
 
-        public TenantBillingPage()
-        {
-            InitializeComponent();
+        // Parameterless constructor kept for XAML / designer use
+        public TenantBillingPage() : this(null) { }
 
-            _view = CollectionViewSource.GetDefaultView(_invoices);
-            _view.Filter = Matches;
-            dgInvoices.ItemsSource = _view;
-
-            _historyView = CollectionViewSource.GetDefaultView(_payments);
-            _historyView.Filter = MatchesPayment;
-            dgHistory.ItemsSource = _historyView;
-
-            LoadData();
-        }
-
-        // Chaining : this() ensures InitializeComponent() and controls load before assigning user
-        public TenantBillingPage(User loggedInUser) : this()
+        // Single real constructor: data loads once
+        public TenantBillingPage(User? loggedInUser)
         {
             LoggedInUser = loggedInUser;
-            LoadData(); // Reload invoices and payments for the logged-in tenant
+
+            InitializeComponent();
+            DataContext = this;
+
+            // The view model needs the user id so it can load THIS tenant's payments from the database
+            PaymentHistoryVm.UserId = GetUserId();
+
+            _view = CollectionViewSource.GetDefaultView(_invoices);
+            _view.Filter = MatchesInvoice;
+            dgInvoices.ItemsSource = _view;
+
+            // NOTE: dgHistory.ItemsSource is bound in XAML to PaymentHistoryVm.FilteredItems.
+            // Do NOT assign it here: FilteredItems is replaced on every filter pass.
+
+            // Keep the tab header in sync with the view model
+            PaymentHistoryVm.PropertyChanged += PaymentHistoryVm_PropertyChanged;
+
+            _ = LoadDataAsync();
         }
+
+        /// <summary>
+        /// The one place that reads the logged-in user's id.
+        /// TODO: if your User class uses a different member, change it here only
+        /// (for example getUserId(), GetId() or the Id property).
+        /// </summary>
+        private int GetUserId() => LoggedInUser?.getUserId() ?? 0;
 
         public string GetTenantName()
         {
@@ -75,76 +73,91 @@ namespace RentalManagementSystem.Presentation
             return "Juan Dela Cruz";
         }
 
-        private void LoadData()
+        private async Task LoadDataAsync()
         {
-            string tenantName = GetTenantName();
+            try
+            {
+                string tenantName = GetTenantName();
 
-            // Replace with database / DAO query filtered by LoggedInUser.getUserId()
-            _invoices.Clear();
-            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2010", Renter = tenantName, Unit = "Unit 101", Period = "Nov 2026", DueDate = "Nov 05, 2026", Amount = 12500, Status = "Pending" });
-            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2001", Renter = tenantName, Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" });
-            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1993", Renter = tenantName, Unit = "Unit 101", Period = "Sep 2026", DueDate = "Sep 05, 2026", Amount = 12500, Status = "Paid" });
-            _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1985", Renter = tenantName, Unit = "Unit 101", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 12500, Status = "Paid" });
+                // 1. Payment history first (from the database), so we know which invoices are already paid
+                await PaymentHistoryVm.LoadDataAsync();
 
-            _payments.Clear();
-            _payments.Add(new TenantPayment { ReceiptNo = "RCT-3001", InvoiceNo = "INV-2001", Period = "Oct 2026", DatePaid = new DateTime(2026, 10, 3), Method = "GCash", Reference = "GC-88421390", Amount = 12500 });
-            _payments.Add(new TenantPayment { ReceiptNo = "RCT-2951", InvoiceNo = "INV-1993", Period = "Sep 2026", DatePaid = new DateTime(2026, 9, 4), Method = "Bank Transfer", Reference = "BT-55120934", Amount = 12500 });
-            _payments.Add(new TenantPayment { ReceiptNo = "RCT-2890", InvoiceNo = "INV-1985", Period = "Aug 2026", DatePaid = new DateTime(2026, 8, 5), Method = "Cash", Reference = "—", Amount = 12500 });
+                // 2. Invoices (still sample data; every invoice starts as Pending)
+                _invoices.Clear();
+                _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2010", Renter = tenantName, Unit = "Unit 101", Period = "Nov 2026", DueDate = "Nov 05, 2026", Amount = 12500, Status = "Pending" });
+                _invoices.Add(new InvoiceRow { InvoiceNo = "INV-2001", Renter = tenantName, Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Pending" });
+                _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1993", Renter = tenantName, Unit = "Unit 101", Period = "Sep 2026", DueDate = "Sep 05, 2026", Amount = 12500, Status = "Pending" });
+                _invoices.Add(new InvoiceRow { InvoiceNo = "INV-1985", Renter = tenantName, Unit = "Unit 101", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 12500, Status = "Pending" });
 
-            _view?.Refresh();
-            _historyView?.Refresh();
-            UpdateSummary();
+                // 3. Any invoice that has a saved payment is Paid
+                foreach (var inv in _invoices)
+                {
+                    bool hasPayment = PaymentHistoryVm.Items.Any(p =>
+                        string.Equals(p.InvoiceNumber, inv.InvoiceNo, StringComparison.OrdinalIgnoreCase));
+
+                    if (hasPayment) inv.Status = "Paid";
+                }
+
+                _view?.Refresh();
+                UpdateSummary();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not load billing data.\n\n{ex.Message}", "Billing and Payments",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        // ---------- Global Search Hook ----------
+        private void PaymentHistoryVm_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PaymentHistoryViewModel.TotalCount) || string.IsNullOrEmpty(e.PropertyName))
+                UpdateHistoryTabHeader();
+        }
+
+        private void UpdateHistoryTabHeader()
+        {
+            if (tabHistory == null) return;
+            tabHistory.Content = $"Payment History ({PaymentHistoryVm.TotalCount})";
+        }
+
+        // ---------- Global search hook ----------
 
         public void ApplyGlobalSearch(string query)
         {
-            _globalSearchQuery = query?.Trim() ?? "";
+            // Set the query FIRST, then refresh (the invoice filter reads it)
+            PaymentHistoryVm.SearchQuery = query ?? string.Empty;
             _view?.Refresh();
-            _historyView?.Refresh();
+            UpdateSummary();
         }
 
         // ---------- Tabs: Invoices | Payment History ----------
 
         private void Tab_Checked(object sender, RoutedEventArgs e)
         {
-            if (FilterBar == null || dgInvoices == null || dgHistory == null || txtHistoryTotal == null) return;
+            if (FilterBar == null || dgInvoices == null || dgHistory == null || tabHistory == null) return;
 
             bool showHistory = tabHistory.IsChecked == true;
 
             FilterBar.Visibility = showHistory ? Visibility.Collapsed : Visibility.Visible;
             dgInvoices.Visibility = showHistory ? Visibility.Collapsed : Visibility.Visible;
             dgHistory.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
-            txtHistoryTotal.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
+            // The history summary bar in XAML follows dgHistory's visibility via ElementName binding.
         }
 
         // ---------- Filtering ----------
 
-        private bool Matches(object item)
+        private bool MatchesInvoice(object item)
         {
             var inv = (InvoiceRow)item;
 
             if (_statusFilter != "All" && inv.Status != _statusFilter) return false;
 
-            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
+            string q = PaymentHistoryVm.SearchQuery;
+            if (string.IsNullOrEmpty(q)) return true;
 
-            return inv.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || inv.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || inv.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private bool MatchesPayment(object item)
-        {
-            var p = (TenantPayment)item;
-
-            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
-
-            return p.ReceiptNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Method.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Reference.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+            return inv.InvoiceNo.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || inv.Period.Contains(q, StringComparison.OrdinalIgnoreCase)
+                || inv.Unit.Contains(q, StringComparison.OrdinalIgnoreCase);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)
@@ -179,8 +192,10 @@ namespace RentalManagementSystem.Presentation
             rbOverdue.Content = $"Overdue ({overdue.Count})";
 
             tabInvoices.Content = $"Invoices ({_invoices.Count})";
-            tabHistory.Content = $"Payment History ({_payments.Count})";
-            txtHistoryTotal.Text = $"{_payments.Count} payment(s) · Total paid {Peso(_payments.Sum(p => p.Amount))}";
+            UpdateHistoryTabHeader();
+
+            // The history total text is bound in XAML to PaymentHistoryVm.HeaderSummaryText,
+            // so it no longer needs to be set here.
         }
 
         // ---------- Buttons ----------
@@ -207,6 +222,20 @@ namespace RentalManagementSystem.Presentation
 
         private void Pay(InvoiceRow inv)
         {
+            if (inv.Status == "Paid")
+            {
+                MessageBox.Show($"{inv.InvoiceNo} is already paid.", "Billing and Payments");
+                return;
+            }
+
+            int userId = GetUserId();
+            if (userId <= 0)
+            {
+                MessageBox.Show("Could not identify the logged-in tenant. Please log in again.",
+                                "Billing and Payments", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var result = MessageBox.Show(
                 $"Pay {inv.AmountText} for {inv.InvoiceNo} ({inv.Period})?",
                 "Confirm Payment",
@@ -216,25 +245,41 @@ namespace RentalManagementSystem.Presentation
 
             if (result != MessageBoxResult.Yes) return;
 
-            inv.Status = "Paid";
-
-            var payment = new TenantPayment
+            var payment = new Payment
             {
-                ReceiptNo = "RCT-" + _nextReceipt++,
-                InvoiceNo = inv.InvoiceNo,
+                UserId = userId,
+                User = LoggedInUser,
+                RenterName = GetTenantName(),
+                InvoiceNumber = inv.InvoiceNo,
                 Period = inv.Period,
-                DatePaid = DateTime.Today,
-                Method = "Online payment",
-                Reference = "REF-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
+                PaymentDate = DateTime.Today,
+                PaymentMethod = "Online payment",
+                ReferenceNumber = "REF-" + DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture),
                 Amount = inv.Amount
             };
-            _payments.Insert(0, payment);
 
-            _view.Refresh();
-            _historyView.Refresh();
+            try
+            {
+                // Saves to the database and sets PaymentId + ReceiptNumber (RCT-0001, ...)
+                PaymentDao.Insert(payment);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Payment could not be saved.\n\n{ex.Message}", "Billing and Payments",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
+                return;   // invoice stays unpaid
+            }
+
+            inv.Status = "Paid";
+
+            // Inserting triggers the view model's filter automatically (CollectionChanged),
+            // which refreshes the grid, the total and the tab count.
+            PaymentHistoryVm.Items.Insert(0, payment);
+
+            _view?.Refresh();
             UpdateSummary();
 
-            MessageBox.Show($"Payment recorded. Your receipt is {payment.ReceiptNo}.", "Billing and Payments");
+            MessageBox.Show($"Payment recorded. Your receipt is {payment.ReceiptNumber}.", "Billing and Payments");
         }
 
         private void View_Click(object sender, RoutedEventArgs e)
@@ -245,11 +290,13 @@ namespace RentalManagementSystem.Presentation
 
         private void Receipt_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is TenantPayment p)
+            if (((FrameworkElement)sender).DataContext is Payment p)
             {
                 MessageBox.Show(
-                    $"Receipt {p.ReceiptNo}\n\nInvoice: {p.InvoiceNo} ({p.Period})\nPaid on: {p.DatePaidText}\n" +
-                    $"Method: {p.Method}\nReference: {p.Reference}\nAmount: {p.AmountText}\n\nPaid by: {GetTenantName()}",
+                    $"Receipt {p.ReceiptNumber}\n\nInvoice: {p.InvoiceNumber} ({p.Period})\n" +
+                    $"Paid on: {p.PaymentDate.ToString("MMM dd, yyyy", Us)}\n" +
+                    $"Method: {p.PaymentMethod}\nReference: {p.ReferenceNumber}\n" +
+                    $"Amount: ₱{p.Amount.ToString("N2", Us)}\n\nPaid by: {GetTenantName()}",
                     "Payment receipt");
             }
         }

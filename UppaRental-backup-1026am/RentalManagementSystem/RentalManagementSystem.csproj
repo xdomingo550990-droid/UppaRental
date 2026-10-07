@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Service\**" />
+    <EmbeddedResource Remove="Service\**" />
+    <None Remove="Service\**" />
+    <Page Remove="Service\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\Icons\houseLogo.png" />
+    <None Remove="Resources\Icons\whiteLogo.png" />
+    <None Remove="Resources\Images\designLanding.png" />
+    <None Remove="Resources\Images\houseImage1.jpg" />
+    <None Remove="Resources\Images\houseImage2.jpg" />
+    <None Remove="Resources\Images\houseImage3.png" />
+    <None Remove="Resources\Images\landingPage.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Icons\whiteLogo.png" />
+    <Resource Include="Resources\Images\designLanding.png" />
+    <Resource Include="Resources\Images\houseImage3.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Guna.UI2.WinForms" Version="2.0.4.8" />
+    <PackageReference Include="MySql.Data" Version="26.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Icons\houseLogo.png" />
+    <Resource Include="Resources\Images\houseImage1.jpg" />
+    <Resource Include="Resources\Images\houseImage2.jpg" />
+    <Resource Include="Resources\Images\landingPage.png" />
+  </ItemGroup>
+
+</Project>

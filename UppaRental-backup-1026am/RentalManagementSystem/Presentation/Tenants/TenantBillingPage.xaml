@@ -120,11 +120,9 @@
                                      Style="{StaticResource BillingTab}" Checked="Tab_Checked"/>
                     </StackPanel>
 
-                    <!-- Only visible on the Payment History tab (follows dgHistory's visibility) -->
+                    <!-- Only visible on the Payment History tab -->
                     <TextBlock x:Name="txtHistoryTotal" HorizontalAlignment="Right" VerticalAlignment="Center"
-                               FontSize="13" FontWeight="SemiBold" Foreground="#1E3223"
-                               Text="{Binding PaymentHistoryVm.HeaderSummaryText}"
-                               Visibility="{Binding Visibility, ElementName=dgHistory}"/>
+                               FontSize="13" FontWeight="SemiBold" Foreground="#1E3223" Visibility="Collapsed"/>
                 </Grid>
 
                 <!-- Filter Pills (Invoices tab only) -->
@@ -194,10 +192,9 @@
 
                 <!-- Payment History Table (Payment History tab) -->
                 <DataGrid Grid.Row="1" Grid.RowSpan="2" x:Name="dgHistory" Style="{StaticResource AppDataGrid}"
-                          ItemsSource="{Binding PaymentHistoryVm.FilteredItems}"
                           Visibility="Collapsed">
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="RECEIPT #" Binding="{Binding ReceiptNumber}" Width="120">
+                        <DataGridTextColumn Header="RECEIPT #" Binding="{Binding ReceiptNo}" Width="120">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Foreground" Value="#27894C"/>
@@ -205,12 +202,12 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNumber}" Width="110"/>
+                        <DataGridTextColumn Header="INVOICE #" Binding="{Binding InvoiceNo}" Width="110"/>
                         <DataGridTextColumn Header="PERIOD" Binding="{Binding Period}" Width="110"/>
-                        <DataGridTextColumn Header="DATE PAID" Binding="{Binding FormattedDatePaid}" Width="130"/>
-                        <DataGridTextColumn Header="METHOD" Binding="{Binding PaymentMethod}" Width="150"/>
-                        <DataGridTextColumn Header="REFERENCE" Binding="{Binding ReferenceNumber}" Width="*"/>
-                        <DataGridTextColumn Header="AMOUNT" Binding="{Binding Amount, StringFormat='₱{0:N2}'}" Width="130">
+                        <DataGridTextColumn Header="DATE PAID" Binding="{Binding DatePaidText}" Width="130"/>
+                        <DataGridTextColumn Header="METHOD" Binding="{Binding Method}" Width="150"/>
+                        <DataGridTextColumn Header="REFERENCE" Binding="{Binding Reference}" Width="*"/>
+                        <DataGridTextColumn Header="AMOUNT" Binding="{Binding AmountText}" Width="130">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="FontWeight" Value="SemiBold"/>

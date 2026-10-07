@@ -1,4 +1,6 @@
 #nullable disable
+using RentalManagementSystem.Model;
+using RentalManagementSystem.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -36,7 +38,7 @@ namespace RentalManagementSystem.Presentation
         public string Location { get; set; } = "";
         public string Type { get; set; } = "";
         public string Floor { get; set; } = "";
-        public int Floors { get; set; } = 1;                // number of floors
+        public int Floors { get; set; } = 1;                 // number of floors
         public string RoomType { get; set; } = "";
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
@@ -163,37 +165,28 @@ namespace RentalManagementSystem.Presentation
 
         public static RentalProperty FromForm(PropertyFormResult r)
         {
-            string photo = r.PhotoPaths != null && r.PhotoPaths.Count > 0 ? r.PhotoPaths[0] : DefaultImage;
+            if (r == null) return null;
 
-            string description = !string.IsNullOrWhiteSpace(r.Notes)
-                ? r.Notes
-                : (r.Amenities != null && r.Amenities.Count > 0 ? string.Join(", ", r.Amenities) + "." : "");
+            string primaryImage = (r.PhotoPaths != null && r.PhotoPaths.Count > 0)
+                ? r.PhotoPaths[0]
+                : DefaultImage;
 
-            var property = new RentalProperty
+            return new RentalProperty
             {
                 Name = r.Name,
-                Location = "Uppa Rental",
-                Type = r.RoomType,
-                Floor = r.Floor,
-                Floors = Math.Max(1, r.Floors),
-                RoomType = r.RoomType,
-                Bedrooms = r.Bedrooms,
-                Bathrooms = r.Bathrooms,
-                SqFt = r.SizeSqFt,
-                Price = r.DailyRent,
-                Status = r.IsDraft ? "Draft" : (string.IsNullOrWhiteSpace(r.Status) ? "Available" : r.Status),
+                Floors = r.NumberOfFloors > 0 ? r.NumberOfFloors : 1,
+                Bedrooms = r.NumberOfRooms,
+                Bathrooms = r.NumberOfBathrooms,
+                SqFt = r.SizeUnit,
+                Price = r.MonthlyRent,
+                RoomType = r.PropertyType.ToString(),
+                Type = r.PropertyType.ToString(),
+                Status = string.IsNullOrWhiteSpace(r.Status) ? "Available" : r.Status,
                 Term = "Long term",
-                Popularity = 0,
-                ImagePath = photo,
-                Description = description,
+                ImagePath = primaryImage,
+                Description = r.Notes,
                 IsNew = true
             };
-
-            // Capacity and utility settings live in RentalPropertyExtras.
-            property.SetMaxCapacity(Math.Max(1, r.MaxCapacity));
-            property.SetUtilities(r.Utilities);
-
-            return property;
         }
 
         // ---------- Categories for the Overview page ----------

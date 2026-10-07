@@ -5,6 +5,11 @@
              
              StartupUri="Presentation/LandingPage.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Include your PropertyCardStyle resource dictionary -->
+                <ResourceDictionary Source="/Resources/PropertyCardStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -65,9 +65,11 @@ namespace RentalManagementSystem.ViewModel
                                 }
 
                                 // Store logged-in user context
+                                // Inside AuthenticateUser() inside UserViewModel.cs, after reading from database:
                                 CurrentUser = loadedUser;
+                                UserSession.CurrentUser = loadedUser; // <-- Store globally
                                 return true;
-                            }
+                                }
                         }
                     }
                 }

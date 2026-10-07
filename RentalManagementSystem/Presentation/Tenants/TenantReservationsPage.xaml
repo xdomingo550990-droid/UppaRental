@@ -9,10 +9,11 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Resources/PageStyles.xaml"/>
+                <!-- Robust Pack URI prevents resource lookup failures -->
+                <ResourceDictionary Source="pack://application:,,,/Resources/PageStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Reservation status badge (self-contained so it doesn't depend on PageStyles status names) -->
+            <!-- Reservation status badge -->
             <Style x:Key="ResBadge" TargetType="Border">
                 <Setter Property="CornerRadius" Value="10"/>
                 <Setter Property="Padding" Value="10,3"/>
@@ -154,7 +155,6 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="View" Style="{StaticResource LinkButton}" Click="View_Click"/>
 
-                                        <!-- Only while the downpayment is still unpaid -->
                                         <Button Content="Pay Downpayment" Click="PayDown_Click">
                                             <Button.Style>
                                                 <Style TargetType="Button" BasedOn="{StaticResource LinkButton}">
@@ -186,7 +186,6 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <!-- Shown when the filter/search matches nothing -->
                 <TextBlock x:Name="txtEmpty" Grid.Row="1" Text="No reservations to show."
                            Foreground="#607464" FontSize="13" Margin="0,60,0,0"
                            HorizontalAlignment="Center" VerticalAlignment="Top"

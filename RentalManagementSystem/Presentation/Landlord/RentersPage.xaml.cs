@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -35,7 +35,7 @@ namespace RentalManagementSystem.Presentation
         public string Address { get; set; } = "";
         public string LeaseStart { get; set; } = "";
         public string LeaseEnd { get; set; } = "";
-        public string Status { get; set; } = "Active";   // Active, Pending, Past, Cancelled
+        public string Status { get; set; } = "Active";   // Active, Pending, Past
 
         /// <summary>Long-Term or Short-Term.</summary>
         public string RentalTerm { get; set; } = LongTerm;
@@ -130,13 +130,7 @@ namespace RentalManagementSystem.Presentation
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private const string DateFormat = "MMM dd, yyyy";
-
-        // ---- rental-term rules ----
-        // Short-Term: 1 day up to 3 months (daily, weekly or monthly).  Long-Term: 6 months and above.
-        private const int ShortMaxMonths = 3;
-        private const int LongMinMonths = 6;
-        private static DateTime ShortMaxEnd(DateTime start) => start.Date.AddMonths(ShortMaxMonths).AddDays(-1);
-        private static DateTime LongMinEnd(DateTime start) => start.Date.AddMonths(LongMinMonths).AddDays(-1);
+        private const string AllUnits = "All Properties / Units";
 
         // Monthly rate of every unit. Used to pre-fill the rent when you reserve a unit (long-term).
         // TODO: load these from your DAO / Service (same source as the Properties page).
@@ -154,11 +148,7 @@ namespace RentalManagementSystem.Presentation
             ["Unit 401"] = 30000m,
             ["Unit 402"] = 30000m,
         };
-
-        // Lease Status choices depend on the entry type
-        private static readonly string[] RenterStatuses = { "Active", "Pending", "Past" };
-        private static readonly string[] ReservationStatuses = { "Pending", "Cancelled" };
-        private bool? _statusListIsReservation;
+        private readonly string[] _statuses = { "Active", "Pending", "Past" };
 
         /// <summary>Available / Reserved / Occupied for every unit, recalculated whenever a record changes.</summary>
         private readonly Dictionary<string, string> _unitStatus = new Dictionary<string, string>();
@@ -178,6 +168,7 @@ namespace RentalManagementSystem.Presentation
         private ICollectionView _view = null!;
         private RenterRow? _editing;
         private string _statusFilter = "All";
+        private string _unitFilter = AllUnits;
         private string _globalSearchQuery = "";
 
         private bool _ready;       // false while the page is still being built
@@ -191,7 +182,11 @@ namespace RentalManagementSystem.Presentation
         {
             InitializeComponent();
 
-            UnitCombo.ItemsSource = UnitRates.Keys.OrderBy(k => k).ToList();
+            var unitNames = UnitRates.Keys.OrderBy(k => k).ToList();
+            UnitCombo.ItemsSource = unitNames;
+            UnitFilterCombo.ItemsSource = new[] { AllUnits }.Concat(unitNames).ToList();
+            UnitFilterCombo.SelectedIndex = 0;
+            StatusCombo.ItemsSource = _statuses;
             TermCombo.ItemsSource = new[] { RenterRow.ShortTerm, RenterRow.LongTerm };
             TermCombo.SelectedItem = RenterRow.LongTerm;
 
@@ -257,6 +252,8 @@ namespace RentalManagementSystem.Presentation
         {
             var r = (RenterRow)item;
 
+            if (_unitFilter != AllUnits && r.Unit != _unitFilter) return false;
+
             if (_statusFilter == "Reservation") { if (!r.IsReservation) return false; }
             else if (_statusFilter != "All" && r.Status != _statusFilter) return false;
 
@@ -276,6 +273,12 @@ namespace RentalManagementSystem.Presentation
             _view?.Refresh();
         }
 
+        private void UnitFilter_Changed(object sender, SelectionChangedEventArgs e)
+        {
+            _unitFilter = UnitFilterCombo.SelectedItem as string ?? AllUnits;
+            _view?.Refresh();
+        }
+
         // ---------- Filter pill counts ----------
 
         private void UpdateSummary()
@@ -285,18 +288,16 @@ namespace RentalManagementSystem.Presentation
             rbPending.Content = $"Pending ({_renters.Count(r => r.Status == "Pending")})";
             rbReservations.Content = $"Reservations ({_renters.Count(r => r.IsReservation)})";
             rbPast.Content = $"Past ({_renters.Count(r => r.Status == "Past")})";
-            rbCancelled.Content = $"Cancelled ({_renters.Count(r => r.Status == "Cancelled")})";
         }
 
         // ---------- Unit availability ----------
 
-        /// <summary>A unit is Available when nobody current holds it. Past and Cancelled records free the unit.</summary>
+        /// <summary>A unit is Available when nobody current holds it. Archived (Past) records free the unit.</summary>
         private void RefreshUnitStatuses()
         {
             foreach (var u in UnitRates.Keys)
             {
-                var holder = _renters.FirstOrDefault(r => r.Unit == u && !r.IsArchived
-                                                          && r.Status != "Past" && r.Status != "Cancelled");
+                var holder = _renters.FirstOrDefault(r => r.Unit == u && !r.IsArchived && r.Status != "Past");
                 _unitStatus[u] = holder == null ? "Available" : holder.Status == "Active" ? "Occupied" : "Reserved";
             }
 
@@ -306,20 +307,6 @@ namespace RentalManagementSystem.Presentation
         public string GetUnitStatus(string unit) =>
             _unitStatus.TryGetValue(unit, out var s) ? s : "Available";
 
-        // ---------- Lease Status choices ----------
-
-        /// <summary>New Renter: Active / Pending / Past.  Reservation: Pending / Cancelled.</summary>
-        private void SetStatusChoices(bool reservation)
-        {
-            if (_statusListIsReservation == reservation) return;
-            _statusListIsReservation = reservation;
-
-            string? current = StatusCombo.SelectedItem as string;
-            var list = reservation ? ReservationStatuses : RenterStatuses;
-            StatusCombo.ItemsSource = list;
-            StatusCombo.SelectedItem = current != null && list.Contains(current) ? current : list[0];
-        }
-
         // ---------- Entry type: New Renter | Reservation ----------
 
         private void Mode_Checked(object sender, RoutedEventArgs e)
@@ -327,7 +314,6 @@ namespace RentalManagementSystem.Presentation
             if (!_ready || _suspend > 0) return;
 
             bool res = IsReservationMode;
-            SetStatusChoices(res);
 
             if (_editing == null)
             {
@@ -358,9 +344,11 @@ namespace RentalManagementSystem.Presentation
             ApplyMode();
         }
 
-        /// <summary>Move-in defaults for a reservation: advance = 1 month of rent.</summary>
+        /// <summary>Move-in defaults for a reservation: advance = 1 month, credit = the downpayment already paid.</summary>
         private void FillMoveInFromReservation(RenterRow r)
         {
+            decimal credit = r.ReservationPaid ? r.Downpayment : 0m;
+            CreditBox.Text = credit > 0 ? credit.ToString("0.##", Inv) : "";
             AdvanceBox.Text = !r.IsShortTerm ? r.Rate.ToString("0.##", Inv) : "";
             DepositBox.Text = r.Deposit > 0 ? r.Deposit.ToString("0.##", Inv) : "";
         }
@@ -372,25 +360,12 @@ namespace RentalManagementSystem.Presentation
                 ? r.ToString("0.##", Inv) : "";
         }
 
-        /// <summary>
-        /// The reservation downpayment is deducted automatically when a paid reservation moves in
-        /// (there is no separate field for it any more).
-        /// </summary>
-        private decimal ReservationCreditFor()
-        {
-            if (_editing == null) return 0m;
-            if (IsConverting) return _editing.ReservationPaid ? _editing.Downpayment : 0m;
-            return _editing.ReservationCredit;
-        }
-
         /// <summary>Updates every label, strip and button that depends on term / renter / reservation / editing.</summary>
         private void ApplyMode()
         {
             bool res = IsReservationMode;
             bool edit = _editing != null;
             bool st = IsShortTerm;
-
-            SetStatusChoices(res);
 
             PanelTitle.Text = res ? "Reservation Details" : "Renter Details";
             PanelSubtitle.Text = res
@@ -402,13 +377,14 @@ namespace RentalManagementSystem.Presentation
                         : "Add a new renter, or click a row in the table to edit it.");
 
             SaveText.Text = (edit ? "Update " : "Save ") + (res ? "Reservation" : "Renter");
-            DeleteText.Text = res ? "Cancel Reservation" : "Move to Past";
+            DeleteText.Text = res ? "Cancel Reservation" : "Move Out Renter";
             ArchiveHint.Text = res
-                ? "Cancel Reservation moves it to Cancelled and frees the unit. Nothing is erased."
-                : "Move to Past archives the selected renter and frees the unit. Nothing is erased.";
+                ? "Cancel archives the reservation and frees the unit. Nothing is erased."
+                : "Move Out archives the selected record and frees the unit. Nothing is erased.";
 
-            TermLabel.Text = st ? "Stay Period" : (res ? "Move-in & End Date" : "Lease Term");
-            RentLabel.Text = st ? "Daily Rent (\u20B1)" : "Monthly Rent (\u20B1)";
+            TermLabel.Text = res ? (st ? "Stay Period" : "Move-in & End Date")
+                                 : (st ? "Stay Period" : "Lease Term");
+            RentLabel.Text = st ? "Daily/Weekly Rate (\u20B1)" : "Monthly Rent (\u20B1)";
             AdvanceLabel.Text = st ? "Advance Payment (\u20B1)" : "1 Month Advance (\u20B1)";
 
             ReservationFields.Visibility = res ? Visibility.Visible : Visibility.Collapsed;
@@ -418,6 +394,10 @@ namespace RentalManagementSystem.Presentation
                                   : "A 20% downpayment is required to reserve the unit.";
             MoveInStrip.Visibility = res ? Visibility.Collapsed : Visibility.Visible;
 
+            // Reservation credit only applies when a reservation is being converted to a renter
+            CreditBox.IsEnabled = IsConverting;
+            CreditBox.Opacity = IsConverting ? 1.0 : 0.55;
+
             UpdateCalc();
         }
 
@@ -425,79 +405,6 @@ namespace RentalManagementSystem.Presentation
             IsShortTerm ? start.AddDays(6)
             : IsReservationMode ? start.AddMonths(6).AddDays(-1)
             : start.AddYears(1).AddDays(-1);
-
-        // ---------- Rental-term rules for the dates ----------
-
-        /// <summary>
-        /// Keeps the dates inside the rental-term rules and tells the user when a date was adjusted.
-        /// Short-Term: 1 day up to 3 months.  Long-Term: 6 months and above.
-        /// A new reservation can't start in the past.
-        /// </summary>
-        private void EnforceDateRules(bool startChanged)
-        {
-            if (StartPicker.SelectedDate is not DateTime start) return;
-
-            string? note = null;
-            _suspend++;
-            try
-            {
-                if (IsReservationMode && _editing == null && start.Date < DateTime.Today)
-                {
-                    start = DateTime.Today;
-                    StartPicker.SelectedDate = start;
-                    note = "The move-in date can't be in the past.";
-                }
-
-                if (EndPicker.SelectedDate is DateTime end)
-                {
-                    bool st = IsShortTerm;
-                    DateTime min = st ? start.Date : LongMinEnd(start);
-                    DateTime max = st ? ShortMaxEnd(start) : DateTime.MaxValue;
-
-                    if (end.Date < min || end.Date > max)
-                    {
-                        if (startChanged)
-                        {
-                            // the start moved and the old end no longer fits: reset it to the default length
-                            EndPicker.SelectedDate = DefaultEnd(start);
-                            note ??= "The end date was adjusted to fit the rental term.";
-                        }
-                        else
-                        {
-                            EndPicker.SelectedDate = end.Date < min ? min : max;
-                            note = st
-                                ? (end.Date < min ? "The end date can't be before the start date."
-                                                  : "Short-Term stays are 1 day up to 3 months. For 6 months or more, choose Long-Term.")
-                                : "Long-Term rentals start at 6 months. For stays up to 3 months, choose Short-Term.";
-                        }
-                    }
-                }
-            }
-            finally { _suspend--; }
-
-            if (note != null) ShowMessage(note, true);
-        }
-
-        /// <summary>Friendly length: "5 days", "2 weeks 3 days", "1 month", "12 months".</summary>
-        private static string DescribeStay(DateTime start, DateTime end)
-        {
-            int days = RenterRow.DaysBetween(start, end);
-            int months = RenterRow.MonthsBetween(start, end);
-
-            if (months >= 1)
-            {
-                int extra = RenterRow.DaysBetween(start.AddMonths(months), end);
-                return $"{months} {(months == 1 ? "month" : "months")}"
-                     + (extra > 0 ? $" {extra} {(extra == 1 ? "day" : "days")}" : "");
-            }
-
-            int weeks = days / 7, rem = days % 7;
-            if (weeks >= 1)
-                return $"{weeks} {(weeks == 1 ? "week" : "weeks")}"
-                     + (rem > 0 ? $" {rem} {(rem == 1 ? "day" : "days")}" : "");
-
-            return $"{days} {(days == 1 ? "day" : "days")}";
-        }
 
         // ---------- Live calculation ----------
         // Long-Term: rate × months, 20% downpayment.  Short-Term: rate × days, no downpayment.
@@ -520,11 +427,6 @@ namespace RentalManagementSystem.Presentation
                     if (!IsReservationMode) FillAdvanceFromRate();
                 }
                 finally { _suspend--; }
-            }
-            else
-            {
-                // editing: the existing dates must still fit the new term
-                EnforceDateRules(false);
             }
 
             ApplyMode();
@@ -560,39 +462,11 @@ namespace RentalManagementSystem.Presentation
         {
             if (!_ready) return;
 
-            if (_suspend == 0)
-            {
-                EnforceDateRules(ReferenceEquals(sender, StartPicker));
-
-                // a new reservation holds the unit until the move-in date by default
-                if (_editing == null && ReferenceEquals(sender, StartPicker) && StartPicker.SelectedDate is DateTime s)
-                    HoldPicker.SelectedDate = s;
-            }
+            // a new reservation holds the unit until the move-in date by default
+            if (_suspend == 0 && _editing == null && ReferenceEquals(sender, StartPicker) && StartPicker.SelectedDate is DateTime s)
+                HoldPicker.SelectedDate = s;
 
             UpdateCalc();
-        }
-
-        /// <summary>The hold can't be in the past and can't run past the move-in date.</summary>
-        private void Hold_Changed(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_ready || _suspend > 0) return;
-            if (HoldPicker.SelectedDate is not DateTime hold || StartPicker.SelectedDate is not DateTime start) return;
-
-            _suspend++;
-            try
-            {
-                if (hold.Date > start.Date)
-                {
-                    HoldPicker.SelectedDate = start.Date;
-                    ShowMessage("The hold should end on or before the move-in date.", true);
-                }
-                else if (_editing == null && hold.Date < DateTime.Today)
-                {
-                    HoldPicker.SelectedDate = DateTime.Today;
-                    ShowMessage("The hold-until date can't be in the past.", true);
-                }
-            }
-            finally { _suspend--; }
         }
 
         private void UpdateCalc()
@@ -616,19 +490,8 @@ namespace RentalManagementSystem.Presentation
                 : $"Total rent: {RenterRow.Money(total)}  ({count} {word} \u00D7 {RenterRow.Money(rate)})";
             ResDownText.Text = RenterRow.Money(down);
 
-            // rule for the selected term + length of the chosen period
-            string rule = st ? "Short-Term: 1 day up to 3 months (daily, weekly or monthly)."
-                             : "Long-Term: 6 months and above.";
-            TermHint.Text = StartPicker.SelectedDate is DateTime hs && EndPicker.SelectedDate is DateTime he && he >= hs
-                ? $"{rule}  Selected: {DescribeStay(hs, he)}."
-                : rule;
-
-            // due at move-in (a paid reservation downpayment is deducted automatically)
-            decimal gross = ParseOptional(AdvanceBox.Text) + ParseOptional(DepositBox.Text);
-            decimal credit = Math.Min(ReservationCreditFor(), gross);
-            NetDueText.Text = RenterRow.Money(Math.Max(gross - credit, 0m));
-            CreditNote.Text = credit > 0 ? $"after {RenterRow.Money(credit)} reservation downpayment" : "";
-            CreditNote.Visibility = credit > 0 ? Visibility.Visible : Visibility.Collapsed;
+            decimal due = ParseOptional(AdvanceBox.Text) + ParseOptional(DepositBox.Text) - ParseOptional(CreditBox.Text);
+            NetDueText.Text = RenterRow.Money(Math.Max(due, 0m));
         }
 
         private static bool TryParseRent(string text, out decimal rent) =>
@@ -682,7 +545,7 @@ namespace RentalManagementSystem.Presentation
             if (contact.Length == 0) { ShowMessage("Please enter a contact number.", true); return; }
             if (email.Length > 0 && (!email.Contains('@') || !email.Contains('.')))
             { ShowMessage("That email address doesn't look right.", true); return; }
-            if (unit == null) { ShowMessage("Please choose an assigned property.", true); return; }
+            if (unit == null) { ShowMessage("Please choose an assigned unit.", true); return; }
             if (!StartPicker.SelectedDate.HasValue || !EndPicker.SelectedDate.HasValue)
             { ShowMessage(st ? "Please pick the start and end dates." : res ? "Please pick the move-in and end dates." : "Please pick the lease start and end dates.", true); return; }
 
@@ -691,19 +554,15 @@ namespace RentalManagementSystem.Presentation
             if (st ? end < start : end <= start)
             { ShowMessage(st ? "The end date can't be before the start date." : "The end date must be after the start date.", true); return; }
 
-            // rental-term rules: Short-Term = 1 day up to 3 months, Long-Term = 6 months and above
-            if (st && end > ShortMaxEnd(start))
-            { ShowMessage("Short-Term stays are 1 day up to 3 months. For 6 months or more, choose Long-Term.", true); return; }
-            if (!st && end < LongMinEnd(start))
-            { ShowMessage("Long-Term rentals start at 6 months. For stays up to 3 months, choose Short-Term.", true); return; }
-
             if (!TryParseRent(RentBox.Text, out decimal rate) || rate <= 0)
-            { ShowMessage(st ? "Enter a valid daily rent." : "Enter a valid monthly rent.", true); return; }
+            { ShowMessage(st ? "Enter a valid daily rate." : "Enter a valid monthly rent.", true); return; }
 
             if (status == null) { ShowMessage("Please choose a lease status.", true); return; }
 
             int months = st ? 0 : RenterRow.MonthsBetween(start, end);
             int days = RenterRow.DaysBetween(start, end);
+            if (!st && months < 1)
+            { ShowMessage("A long-term rental must cover at least 1 month. Use Short-Term for shorter stays.", true); return; }
 
             bool newReservation = res && (_editing == null || !_editing.IsReservation);
             DateTime hold = HoldPicker.SelectedDate?.Date ?? start;
@@ -714,6 +573,8 @@ namespace RentalManagementSystem.Presentation
             {
                 if (newReservation && start < DateTime.Today)
                 { ShowMessage("The move-in date can't be in the past.", true); return; }
+                if (!st && months > 60)
+                { ShowMessage("A reservation must cover 1 to 60 months.", true); return; }
                 if (!HoldPicker.SelectedDate.HasValue)
                 { ShowMessage("Please pick the hold-until date.", true); return; }
                 if (newReservation && hold < DateTime.Today)
@@ -723,19 +584,21 @@ namespace RentalManagementSystem.Presentation
             }
             else
             {
-                if (!IsValidOptional(AdvanceBox.Text) || !IsValidOptional(DepositBox.Text))
-                { ShowMessage("Advance and deposit must be valid amounts.", true); return; }
+                if (!IsValidOptional(AdvanceBox.Text) || !IsValidOptional(DepositBox.Text) || !IsValidOptional(CreditBox.Text))
+                { ShowMessage("Advance, deposit and credit must be valid amounts.", true); return; }
 
                 advance = ParseOptional(AdvanceBox.Text);
                 deposit = ParseOptional(DepositBox.Text);
-                credit = Math.Min(ReservationCreditFor(), advance + deposit);
+                credit = IsConverting ? ParseOptional(CreditBox.Text) : (_editing?.ReservationCredit ?? 0m);
+
+                if (credit > advance + deposit)
+                { ShowMessage("The reservation credit can't be more than the advance plus the deposit.", true); return; }
             }
 
-            // one property can't have two current renters / reservations
-            if (status != "Past" && status != "Cancelled")
+            // one unit can't have two current renters / reservations
+            if (status != "Past")
             {
-                var clash = _renters.FirstOrDefault(r => r != _editing && r.Unit == unit
-                                                         && r.Status != "Past" && r.Status != "Cancelled");
+                var clash = _renters.FirstOrDefault(r => r != _editing && r.Unit == unit && r.Status != "Past");
                 if (clash != null)
                 {
                     ShowMessage($"{unit} is already assigned to {clash.Name}.", true);
@@ -764,7 +627,7 @@ namespace RentalManagementSystem.Presentation
             {
                 var answer = MessageBox.Show(
                     $"Confirm that the move-in payment of {RenterRow.Money(due)} " +
-                    $"(advance + deposit{(credit > 0 ? " - reservation downpayment" : "")}) has been received from {name}?",
+                    $"(advance + deposit{(credit > 0 ? " - reservation credit" : "")}) has been received from {name}?",
                     "Confirm move-in payment", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (answer != MessageBoxResult.Yes) return;
             }
@@ -800,14 +663,14 @@ namespace RentalManagementSystem.Presentation
                 row.ReservationCredit = credit;
             }
 
-            // Past / Cancelled = archived (kept with its history); anything else is current
-            if (status == "Past" || status == "Cancelled")
+            // Past = archived (kept with its history); anything else is current
+            if (status == "Past")
             {
                 if (!row.IsArchived)
                 {
                     row.IsArchived = true;
                     row.MoveOutDate = DateTime.Today;
-                    row.ArchiveReason = status == "Cancelled" ? "Reservation cancelled" : "Marked as past";
+                    row.ArchiveReason = "Marked as past";
                 }
             }
             else row.IsArchived = false;
@@ -834,10 +697,7 @@ namespace RentalManagementSystem.Presentation
 
         private void Clear_Click(object sender, RoutedEventArgs e) => ClearForm();
 
-        /// <summary>
-        /// The form's red button: "Move to Past" for a renter, "Cancel Reservation" for a reservation.
-        /// Nothing is deleted; the record is archived.
-        /// </summary>
+        /// <summary>The form's red button. Archives the selected record; nothing is deleted.</summary>
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             var target = dgRenters.SelectedItem as RenterRow ?? _editing;
@@ -855,15 +715,14 @@ namespace RentalManagementSystem.Presentation
         }
 
         /// <summary>
-        /// Renter  -> Move out: status becomes Past.
-        /// Reservation -> Cancel: status becomes Cancelled.
-        /// Frees the unit and keeps the profile, transactions and unpaid balance.
+        /// Move Out / Terminate Lease / Cancel Reservation.
+        /// Frees the unit, moves the profile to Past, and keeps the profile, transactions and unpaid balance.
         /// </summary>
         private void ArchiveRow(RenterRow target)
         {
-            if (target.IsArchived || target.Status == "Past" || target.Status == "Cancelled")
+            if (target.IsArchived || target.Status == "Past")
             {
-                ShowMessage($"{target.Name} is already under {target.Status}.", true);
+                ShowMessage($"{target.Name} is already archived under Past.", true);
                 return;
             }
 
@@ -871,27 +730,25 @@ namespace RentalManagementSystem.Presentation
             var sb = new StringBuilder();
             sb.Append(isRes
                 ? $"Cancel the reservation of {target.Name} for {target.Unit}?"
-                : $"Move {target.Name} out of {target.Unit} and end the lease?");
+                : $"Move out {target.Name} from {target.Unit} and end the lease?");
             sb.Append($"\n\n{target.Unit} will become Available again.");
-            sb.Append(isRes
-                ? "\nThe reservation moves to Cancelled and keeps its history and transactions."
-                : "\nThe renter moves to Past and keeps the profile, history and transactions.");
+            sb.Append("\nThe profile moves to Past and keeps its history and transactions.");
             if (target.Balance > 0)
                 sb.Append($"\n\nUnpaid balance kept on record: {RenterRow.Money(target.Balance)}");
             else if (target.Balance < 0)
                 sb.Append($"\n\nPayments on file: {RenterRow.Money(-target.Balance)} (any refund is handled outside this screen).");
 
-            var answer = MessageBox.Show(sb.ToString(), isRes ? "Cancel reservation" : "Move to Past",
+            var answer = MessageBox.Show(sb.ToString(), isRes ? "Cancel reservation" : "Move out renter",
                                          MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (answer != MessageBoxResult.Yes) return;
 
-            target.Status = isRes ? "Cancelled" : "Past";
+            target.Status = "Past";
             target.IsArchived = true;
             target.MoveOutDate = DateTime.Today;
             target.ArchiveReason = isRes ? "Reservation cancelled" : "Moved out";
             target.Log(isRes ? "Reservation cancelled" : "Moved out / lease terminated", 0m);
 
-            // TODO: save the archived `target` (status Past / Cancelled + MoveOutDate) and set the unit to Available through your DAO / Service here
+            // TODO: save the archived `target` (status Past + MoveOutDate) and set the unit to Available through your DAO / Service here
 
             _view.Refresh();
             UpdateSummary();
@@ -899,8 +756,8 @@ namespace RentalManagementSystem.Presentation
             ClearForm();
 
             ShowMessage(isRes
-                ? $"{target.Name}'s reservation was moved to Cancelled. {target.Unit} is now {GetUnitStatus(target.Unit)}."
-                : $"{target.Name} was moved to Past. {target.Unit} is now {GetUnitStatus(target.Unit)}.", false);
+                ? $"{target.Name}'s reservation was cancelled. {target.Unit} is now {GetUnitStatus(target.Unit)}."
+                : $"{target.Name} moved out. {target.Unit} is now {GetUnitStatus(target.Unit)}; the profile is under Past.", false);
         }
 
         /// <summary>Empties the form. Keeps the current type and term so you can add several in a row.</summary>
@@ -910,7 +767,6 @@ namespace RentalManagementSystem.Presentation
             try
             {
                 _editing = null;
-                SetStatusChoices(IsReservationMode);
 
                 NameBox.Text = "";
                 ContactBox.Text = "";
@@ -919,6 +775,7 @@ namespace RentalManagementSystem.Presentation
                 RentBox.Text = "";
                 AdvanceBox.Text = "";
                 DepositBox.Text = "";
+                CreditBox.Text = "";
                 rbPayUnpaid.IsChecked = true;
                 UnitCombo.SelectedIndex = -1;
                 if (TermCombo.SelectedItem == null) TermCombo.SelectedItem = RenterRow.LongTerm;
@@ -943,7 +800,6 @@ namespace RentalManagementSystem.Presentation
 
                 if (r.IsReservation) rbModeReservation.IsChecked = true;
                 else rbModeRenter.IsChecked = true;
-                SetStatusChoices(r.IsReservation);
 
                 NameBox.Text = r.Name;
                 ContactBox.Text = r.Contact;
@@ -955,12 +811,12 @@ namespace RentalManagementSystem.Presentation
                 EndPicker.SelectedDate = ParseDate(r.LeaseEnd);
                 RentBox.Text = r.Rate.ToString("0.##", Inv);
                 StatusCombo.SelectedItem = r.Status;
-                if (StatusCombo.SelectedItem == null) StatusCombo.SelectedIndex = 0;
 
                 (r.ReservationPaid ? rbPayPaid : rbPayUnpaid).IsChecked = true;
                 HoldPicker.SelectedDate = r.HoldUntil ?? ParseDate(r.LeaseStart);
                 AdvanceBox.Text = r.Advance > 0 ? r.Advance.ToString("0.##", Inv) : "";
                 DepositBox.Text = r.Deposit > 0 ? r.Deposit.ToString("0.##", Inv) : "";
+                CreditBox.Text = r.ReservationCredit > 0 ? r.ReservationCredit.ToString("0.##", Inv) : "";
             }
             finally { _suspend--; }
 
@@ -996,7 +852,7 @@ namespace RentalManagementSystem.Presentation
 
             if (r.IsReservation)
             {
-                // Switching to New Renter sets Active and fills the advance (the downpayment is deducted automatically)
+                // Switching to New Renter sets Active and fills advance + reservation credit
                 rbModeRenter.IsChecked = true;
             }
             else
@@ -1040,7 +896,7 @@ namespace RentalManagementSystem.Presentation
             else if (r.Advance > 0 || r.Deposit > 0)
             {
                 sb.AppendLine($"Advance: {RenterRow.Money(r.Advance)}   Deposit: {RenterRow.Money(r.Deposit)}");
-                if (r.ReservationCredit > 0) sb.AppendLine($"Reservation downpayment applied: {RenterRow.Money(r.ReservationCredit)}");
+                if (r.ReservationCredit > 0) sb.AppendLine($"Reservation credit: {RenterRow.Money(r.ReservationCredit)}");
             }
 
             if (r.IsArchived)

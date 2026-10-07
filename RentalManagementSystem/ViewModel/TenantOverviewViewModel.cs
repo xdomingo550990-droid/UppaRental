@@ -7,13 +7,17 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace RentalManagementSystem.ViewModel
 {
     public class PropertySection
     {
-        public string CategoryName { get; set; } = string.Empty;
-        public List<Property> Properties { get; set; } = new List<Property>();
+
+        public string Title { get; set; } = "";
+        public string Subtitle { get; set; } = "";
+        public Visibility DividerVisibility { get; set; } = Visibility.Visible;
+        public List<Property> Items { get; set; } = new();
     }
 
     public class TenantOverviewViewModel : INotifyPropertyChanged
@@ -23,7 +27,7 @@ namespace RentalManagementSystem.ViewModel
         private string _filter = "All";
         private string _searchQuery = "";
         private ObservableCollection<PropertySection> _sections;
-        private User _loggedInUser;
+        private User _currentUser;
 
         public ObservableCollection<PropertySection> Sections
         {
@@ -62,10 +66,73 @@ namespace RentalManagementSystem.ViewModel
                 }
             }
         }
+        public void LoadPropertiesFromDb()
+        {
+            var allProperties = new List<Property>();
+
+            try
+            {
+                using (var conn = DatabaseHelper.GetConnection())
+                {
+                    conn.Open();
+                    string sql = "SELECT * FROM properties ORDER BY property_id DESC";
+
+                    using (var cmd = new MySqlCommand(sql, conn))
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var p = new Property
+                            {
+                                PropertyId = Convert.ToInt32(reader["property_id"]),
+                                LandlordId = reader["landlord_id"] != DBNull.Value ? Convert.ToInt32(reader["landlord_id"]) : (int?)null,
+                                Name = reader["name"]?.ToString() ?? "",
+                                Location = reader["location"]?.ToString() ?? "",
+                                NumberOfRooms = reader["number_of_rooms"] != DBNull.Value ? Convert.ToInt32(reader["number_of_rooms"]) : 1,
+                                NumberOfFloors = reader["number_of_floors"] != DBNull.Value ? Convert.ToInt32(reader["number_of_floors"]) : 1,
+                                NumberofBathrooms = reader["number_of_bathrooms"] != DBNull.Value ? Convert.ToInt32(reader["number_of_bathrooms"]) : 1,
+                                MaximumCapacity = reader["maximum_capacity"] != DBNull.Value ? Convert.ToInt32(reader["maximum_capacity"]) : 1,
+                                SizeUnit = reader["size_unit"] != DBNull.Value ? Convert.ToInt32(reader["size_unit"]) : 0,
+
+                                // Converted using Convert.ToInt32 to match Property model int types
+                                SecurityDeposit = reader["security_deposit"] != DBNull.Value ? Convert.ToInt32(Convert.ToDecimal(reader["security_deposit"])) : 0,
+                                MonthlyRent = reader["monthly_rent"] != DBNull.Value ? Convert.ToInt32(Convert.ToDecimal(reader["monthly_rent"])) : 0,
+
+                                isElectricIncluded = reader["is_electric_included"] != DBNull.Value && Convert.ToBoolean(reader["is_electric_included"]),
+                                ElectricBill = reader["electric_bill"] != DBNull.Value ? Convert.ToInt32(Convert.ToDecimal(reader["electric_bill"])) : 0,
+
+                                isWaterIncluded = reader["is_water_included"] != DBNull.Value && Convert.ToBoolean(reader["is_water_included"]),
+                                WaterBill = reader["water_bill"] != DBNull.Value ? Convert.ToInt32(Convert.ToDecimal(reader["water_bill"])) : 0,
+
+                                isWifiIncluded = reader["is_wifi_included"] != DBNull.Value && Convert.ToBoolean(reader["is_wifi_included"]),
+                                WifiBill = reader["wifi_bill"] != DBNull.Value ? Convert.ToInt32(Convert.ToDecimal(reader["wifi_bill"])) : 0,
+
+                                Description = reader["description"]?.ToString() ?? "",
+                                Notes = reader["notes"]?.ToString() ?? "",
+                                Status = reader["status"]?.ToString() ?? "Available"
+                            };
+
+                            allProperties.Add(p);
+                        }
+                    }
+                }
+
+                // Passed all 3 required arguments (properties list, filter string, landlord/user ID)
+                string currentFilter = Filter ?? "All";
+                int landlordId = _currentUser?.UserId ?? 0; // Or pass 0 if displaying all properties
+
+                BuildSections(allProperties, currentFilter, landlordId);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading properties: {ex.Message}");
+            }
+        }
+        
 
         public TenantOverviewViewModel(User user = null)
         {
-            _loggedInUser = user;
+            _currentUser = user;
             Sections = new ObservableCollection<PropertySection>();
             LoadSections();
         }
@@ -146,26 +213,32 @@ namespace RentalManagementSystem.ViewModel
             return properties;
         }
 
-        private IEnumerable<PropertySection> BuildSections(IEnumerable<Property> properties, string filter, int perSection)
+        private static List<PropertySection> BuildSections(IEnumerable<Property> properties, string filter, int landlordId)
         {
-            var filtered = properties.AsEnumerable();
+            // If the pool is already scoped to the logged-in landlord via ViewModel, 
+            // simply filter by the status category:
+            var filtered = properties;
 
             if (!string.Equals(filter, "All", StringComparison.OrdinalIgnoreCase))
             {
-                filtered = filtered.Where(p =>
-                    string.Equals(p.PropertyType.ToString(), filter, StringComparison.OrdinalIgnoreCase));
+                filtered = filtered.Where(p => string.Equals(p.Status, filter, StringComparison.OrdinalIgnoreCase));
             }
 
             return filtered
-                .GroupBy(p => p.PropertyType.ToString())
-                .Select(g => new PropertySection
+                .GroupBy(p => string.IsNullOrEmpty(p.Status) ? "Available" : p.Status)
+                .Select(g =>
                 {
-                    CategoryName = g.Key,
-                    Properties = g.Take(perSection).ToList()
+                    var list = g.ToList();
+                    return new PropertySection
+                    {
+                        Title = g.Key,
+                        Subtitle = $"{list.Count} {(list.Count == 1 ? "Property" : "Properties")}",
+                        DividerVisibility = Visibility.Visible,
+                        Items = list
+                    };
                 })
                 .ToList();
         }
-
         private static bool Has(string text, string query) =>
             !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
 

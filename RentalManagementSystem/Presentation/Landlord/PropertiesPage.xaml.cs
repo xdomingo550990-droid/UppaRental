@@ -1,22 +1,32 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using RentalManagementSystem.Model;
+using RentalManagementSystem.ViewModel;
 
 namespace RentalManagementSystem.Presentation
 {
-    public partial class PropertiesPage : UserControl
+    public partial class UnitsPage : UserControl
     {
         private string _filter = "All";
+        private readonly LandlordViewModel _viewModel;
 
-        public PropertiesPage()
+        public UnitsPage()
         {
             InitializeComponent();
+            _viewModel = new LandlordViewModel();
+            DataContext = _viewModel;
+
+            // Refresh layout whenever properties in DB collection change
+            _viewModel.Properties.CollectionChanged += (s, e) => LoadSections();
+
             LoadSections();
         }
 
-        // ---------- Add Property popup ----------
+        // ---------- Add Property Popup ----------
 
         private void AddProperty_Click(object sender, RoutedEventArgs e)
         {
@@ -25,90 +35,117 @@ namespace RentalManagementSystem.Presentation
                 Owner = Window.GetWindow(this)
             };
 
-            if (addWindow.ShowDialog() == true)
+            if (addWindow.ShowDialog() == true && addWindow.Result != null)
             {
-                // Goes into the shared list, so it also appears on the Overview page.
-                PropertyStore.Add(PropertyStore.FromForm(addWindow.Result));
-                LoadSections();
+                var form = addWindow.Result;
+
+                // Map PropertyFormResult to Model.Property
+                _viewModel.NewProperty = new Property
+                {
+                    Name = string.IsNullOrWhiteSpace(form.Name) ? "Untitled Property" : form.Name,
+                    Location = string.IsNullOrWhiteSpace(form.Location) ? "N/A" : form.Location,
+                    MonthlyRent = (int)form.MonthlyRent,
+                    NumberOfRooms = form.NumberOfRooms,
+                    NumberOfFloors = form.NumberOfFloors,
+                    NumberofBathrooms = form.NumberOfBathrooms,
+                    MaximumCapacity = form.MaximumCapacity,
+                    SizeUnit = form.SizeUnit,
+                    SecurityDeposit = (int)form.SecurityDeposit,
+                    PropertyType = form.PropertyType,
+                    Amenities = form.Amenities ?? new List<Amenities>(),
+                    Notes = form.Notes ?? "",
+                    Description = form.Notes ?? "",
+                    Status = string.IsNullOrEmpty(form.Status) ? "Available" : form.Status
+                };
+
+                // Execute directly to trigger MySQL INSERT
+                _viewModel.AddPropertyCommand.Execute(null);
             }
         }
 
-        // ---------- Read more / Edit / Delete (buttons inside the cards and rows) ----------
+        // ---------- Item Actions ----------
 
         private void Item_Click(object sender, RoutedEventArgs e)
         {
-            if (e.OriginalSource is not Button b || b.DataContext is not RentalProperty p) return;
+            // Changed type check from RentalProperty to Property
+            if (e.OriginalSource is not Button button || button.DataContext is not Property property)
+                return;
 
-            switch (b.Tag as string)
+            switch (button.Tag as string)
             {
                 case "Edit":
-                    EditProperty(p);
+                    EditProperty(property);
                     e.Handled = true;
                     break;
                 case "Delete":
-                    DeleteProperty(p);
+                    DeleteProperty(property);
                     e.Handled = true;
                     break;
                 case "Read":
-                    ShowDetails(p);
+                    ShowDetails(property);
                     e.Handled = true;
                     break;
             }
         }
 
-        private void EditProperty(RentalProperty p)
+        // Changed parameter type from RentalProperty to Property
+        private void EditProperty(Property property)
         {
-            var editWindow = new EditPropertyWindow(p)
+            var editWindow = new EditPropertyWindow(property)
             {
                 Owner = Window.GetWindow(this)
             };
 
-            // The window only changes the property when Save is pressed and the form is valid.
             if (editWindow.ShowDialog() == true)
             {
-                PropertyStore.NotifyUpdated(p);
                 LoadSections();
             }
         }
 
-        private void DeleteProperty(RentalProperty p)
+        private void DeleteProperty(Property property)
         {
             var answer = MessageBox.Show(
                 Window.GetWindow(this),
-                $"Delete \"{p.Name}\"?\n\nThis removes it from the Properties and Overview pages.",
-                "Delete property",
+                $"Delete \"{property.Name}\"?\n\nThis removes it permanently from your database.",
+                "Delete Property",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
                 MessageBoxResult.No);
 
             if (answer != MessageBoxResult.Yes) return;
 
-            if (PropertyStore.Remove(p))
-                LoadSections();
+            _viewModel.Properties.Remove(property);
+            LoadSections();
         }
 
-        private void ShowDetails(RentalProperty p)
+        private void ShowDetails(Property property)
         {
             MessageBox.Show(
-                $"{p.Name}\n{p.Location}\n\n{p.Description}\n\n{p.Summary}\n{p.Status} · {p.PriceWithUnit}",
-                "Property details");
+                $"Name: {property.Name}\n" +
+                $"Location: {property.Location}\n" +
+                $"Monthly Rent: ₱{property.MonthlyRent:N0}\n" +
+                $"Electric Bill: ₱{property.ElectricBill:N0}\n" +
+                $"Water Bill: ₱{property.WaterBill:N0}\n" +
+                $"Status: {property.Status}\n\n" +
+                $"Notes:\n{property.Notes}",
+                "Property Details");
         }
 
-        // ---------- View switch, chips, search ----------
+        // ---------- View Switch & Search ----------
 
         private void View_Checked(object sender, RoutedEventArgs e)
         {
-            // Fires during InitializeComponent, before the views exist.
             if (scrList == null || scrGallery == null || rbGallery == null) return;
 
-            bool gallery = rbGallery.IsChecked == true;
-            scrList.Visibility = gallery ? Visibility.Collapsed : Visibility.Visible;
-            scrGallery.Visibility = gallery ? Visibility.Visible : Visibility.Collapsed;
+            bool isGallery = rbGallery.IsChecked == true;
+            scrList.Visibility = isGallery ? Visibility.Collapsed : Visibility.Visible;
+            scrGallery.Visibility = isGallery ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void Category_Checked(object sender, RoutedEventArgs e)
         {
-            if (sender is RadioButton rb) _filter = rb.Tag?.ToString() ?? "All";
+            if (sender is RadioButton rb)
+                _filter = rb.Tag?.ToString() ?? "All";
 
             if (icListSections == null) return;
             LoadSections();
@@ -120,40 +157,55 @@ namespace RentalManagementSystem.Presentation
             LoadSections();
         }
 
-        // ---------- Sections ----------
+        // ---------- Load & Group Sections ----------
 
         private void LoadSections()
         {
             string query = txtSearch?.Text?.Trim() ?? "";
 
-            IEnumerable<RentalProperty> pool = PropertyStore.All;
-            if (query.Length > 0)
+            IEnumerable<Property> pool = _viewModel.Properties;
+
+            if (!string.IsNullOrEmpty(query))
             {
                 pool = pool.Where(p =>
-                    Has(p.Name, query) || Has(p.Location, query) || Has(p.Description, query) ||
-                    Has(p.Status, query) || Has(p.RoomType, query));
+                    Has(p.Name, query) ||
+                    Has(p.Location, query) ||
+                    Has(p.Description, query) ||
+                    Has(p.Notes, query) ||
+                    Has(p.Status, query));
             }
 
-            var sections = PropertyStore.BuildStatusSections(pool, _filter);
+            var sections = BuildStatusSections(pool, _filter);
 
             icListSections.ItemsSource = sections;
             icGallerySections.ItemsSource = sections;
             txtEmpty.Visibility = sections.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private static List<PropertyStatusGroup> BuildStatusSections(IEnumerable<Property> properties, string filter)
+        {
+            if (filter != "All")
+            {
+                properties = properties.Where(p => string.Equals(p.Status, filter, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return properties
+                .GroupBy(p => string.IsNullOrEmpty(p.Status) ? "Available" : p.Status)
+                .Select(g => new PropertyStatusGroup
+                {
+                    StatusName = g.Key,
+                    Items = g.ToList()
+                })
+                .ToList();
+        }
+
         private static bool Has(string text, string query) =>
             !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
-    // Kept only in case another page still references it. If the build has no errors
-    // after you delete this class, you can remove it.
-    public class UnitViewModel
+    public class PropertyStatusGroup
     {
-        public string RoomNo { get; set; } = "";
-        public string Floor { get; set; } = "";
-        public string RoomType { get; set; } = "";
-        public string MonthlyRate { get; set; } = "";
-        public string Status { get; set; } = "";
-        public string Actions { get; set; } = "";
+        public string StatusName { get; set; } = "";
+        public List<Property> Items { get; set; } = new();
     }
 }

@@ -1,5 +1,5 @@
-﻿using RentalManagementSystem.Model;   // for User
-using System;
+﻿using System;
+using System.Configuration;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
@@ -12,20 +12,27 @@ namespace RentalManagementSystem.Presentation
         private const double SidebarCollapsedWidth = 72;
         private bool _sidebarCollapsed;
 
-        // Logged-in user (passed from AuthCard)
-        private readonly User? _currentUser;
+        // Stores the optional user state or session object if passed
+        public object CurrentUser { get; private set; }
 
-        // Empty constructor, kept so the designer still works
-        public DashboardPage() : this(null) { }
-
-        // FIX: constructor that accepts the user (AuthCard calls this)
-        public DashboardPage(User? user)
+        /// <summary>
+        /// Default parameterless constructor.
+        /// </summary>
+        public DashboardPage()
         {
             InitializeComponent();
-            _currentUser = user;
 
-            // Overview is the first page shown
+            // Overview is the page shown when the dashboard opens
             MainContentFrame.Content = new OverviewPage();
+        }
+
+        /// <summary>
+        /// Overloaded constructor that accepts an argument (e.g., Logged-in User/Session).
+        /// Calls the parameterless constructor first using ': this()'.
+        /// </summary>
+        public DashboardPage(object currentUser) : this()
+        {
+            CurrentUser = currentUser;
         }
 
         private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
@@ -40,7 +47,6 @@ namespace RentalManagementSystem.Presentation
             };
             SidebarPanel.BeginAnimation(FrameworkElement.WidthProperty, animation);
 
-            // Hide brand text when collapsed
             BrandPanel.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
             btnToggleSidebar.HorizontalAlignment = _sidebarCollapsed
                 ? HorizontalAlignment.Center
@@ -54,25 +60,25 @@ namespace RentalManagementSystem.Presentation
 
             txtPageTitle.Text = nav.Content?.ToString();
 
-            // Clear search on every page change
+            // Start every page with an empty search box
             txtSearch.Clear();
 
-            // Search bar hidden on Properties and Profile
+            // The top search bar is hidden on the Properties and Settings pages
             bool hideSearch = nav.Name == nameof(btnSettings) || nav.Name == nameof(btnProperties);
             SearchBar.Visibility = hideSearch ? Visibility.Collapsed : Visibility.Visible;
 
             MainContentFrame.Content = nav.Name switch
             {
                 nameof(btnOverview) => new OverviewPage(),
-                nameof(btnProperties) => new PropertiesPage(),   // FIX: was UnitsPage (not in project)
-                nameof(btnRenters) => new RentersPage(),
+                nameof(btnProperties) => new UnitsPage(),
+                nameof(btnRenters) => new RentersPage(),      // Renters + Reservations share this page
                 nameof(btnBilling) => new BillingPage(),
-                nameof(btnSettings) => new ProfilePage(),
+                nameof(btnSettings) => new ProfilePage(),    // profile card at the bottom of the sidebar
                 _ => MainContentFrame.Content
             };
         }
 
-        // Send search text to the open page
+        // Sends what you type in the top search bar to the page that is open
         private void Search_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (MainContentFrame == null) return;
@@ -84,10 +90,10 @@ namespace RentalManagementSystem.Presentation
                 case OverviewPage overview:
                     overview.SetSearch(query);
                     break;
-                case RentersPage renters:
+                case RentersPage renters:      // renters + reservations table
                     renters.ApplyGlobalSearch(query);
                     break;
-                case BillingPage billing:
+                case BillingPage billing:      // invoices table
                     billing.ApplyGlobalSearch(query);
                     break;
             }
@@ -100,22 +106,22 @@ namespace RentalManagementSystem.Presentation
                 "Confirm Logout",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question,
-                MessageBoxResult.No);   // "No" is default
+                MessageBoxResult.No);          // "No" is the default so Enter doesn't log you out by accident
 
             if (result != MessageBoxResult.Yes)
                 return;
 
-            // Clear session here if you add one
-            _ = _currentUser;
+            // Clear session state
+            CurrentUser = null;
 
             var landing = new LandingPage();
-            landing.Show();
-            this.Close();
+            landing.Show();                    // open the landing page first...
+            this.Close();                      // ...then close the dashboard
         }
 
-        // Unused handler, kept in case the XAML references it
         private void btnProperties_Checked(object sender, RoutedEventArgs e)
         {
+
         }
     }
 }

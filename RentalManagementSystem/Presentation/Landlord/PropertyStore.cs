@@ -180,7 +180,7 @@ namespace RentalManagementSystem.Presentation
                 Bedrooms = r.Bedrooms,
                 Bathrooms = r.Bathrooms,
                 SqFt = r.SizeSqFt,
-                Price = r.MonthlyRent,
+                Price = r.DailyRent,
                 Status = r.IsDraft ? "Draft" : (string.IsNullOrWhiteSpace(r.Status) ? "Available" : r.Status),
                 Term = "Long term",
                 Popularity = 0,

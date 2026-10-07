@@ -21,21 +21,35 @@ namespace RentalManagementSystem.Presentation
             txtName.Text = _property.Name;
             txtLocation.Text = _property.Location;
             txtFloors.Text = Math.Max(1, _property.Floors).ToString(CultureInfo.InvariantCulture);
+            txtPrice.Text = _property.Price.ToString("0.##", CultureInfo.InvariantCulture);
             txtBedrooms.Text = _property.Bedrooms.ToString(CultureInfo.InvariantCulture);
             txtBathrooms.Text = _property.Bathrooms.ToString(CultureInfo.InvariantCulture);
             txtSqFt.Text = _property.SqFt.ToString(CultureInfo.InvariantCulture);
-            txtPrice.Text = _property.Price.ToString("0.##", CultureInfo.InvariantCulture);
+            txtCapacity.Text = Math.Max(1, _property.GetMaxCapacity()).ToString(CultureInfo.InvariantCulture);
             txtDescription.Text = _property.Description;
             txtPhoto.Text = _property.ImagePath;
-            txtCapacity.Text = Math.Max(1, _property.GetMaxCapacity()).ToString(CultureInfo.InvariantCulture);
 
+            // Populate Utility Billing setup from existing property settings
             var utilities = _property.GetUtilities();
-            ucWater.Option = utilities.Water ?? new UtilityOption();
-            ucElectricity.Option = utilities.Electricity ?? new UtilityOption();
-            ucWifi.Option = utilities.Wifi ?? new UtilityOption();
 
-            // Property type: only the four allowed types. An old value (e.g. "2-Bedroom")
-            // leaves the box empty so the user must pick a new type before saving.
+            if (utilities.Water != null)
+            {
+                chkWater.IsChecked = !utilities.Water.Included;
+                txtWaterRate.Text = utilities.Water.Amount > 0 ? utilities.Water.Amount.ToString("0.##", CultureInfo.InvariantCulture) : "100";
+            }
+
+            if (utilities.Electricity != null)
+            {
+                chkElectricity.IsChecked = !utilities.Electricity.Included;
+                txtElectricityRate.Text = utilities.Electricity.Amount > 0 ? utilities.Electricity.Amount.ToString("0.##", CultureInfo.InvariantCulture) : "15";
+            }
+
+            if (utilities.Wifi != null)
+            {
+                chkWifi.IsChecked = !utilities.Wifi.Included;
+                txtWifiRate.Text = utilities.Wifi.Amount > 0 ? utilities.Wifi.Amount.ToString("0.##", CultureInfo.InvariantCulture) : "99";
+            }
+
             cmbType.SelectedIndex = -1;
             foreach (ComboBoxItem item in cmbType.Items)
             {
@@ -46,7 +60,6 @@ namespace RentalManagementSystem.Presentation
                 }
             }
 
-            Select(cmbTerm, _property.Term);
             Select(cmbStatus, _property.Status);
         }
 
@@ -85,7 +98,7 @@ namespace RentalManagementSystem.Presentation
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            // ----- validate everything first -----
+            // Validation
             string name = txtName.Text.Trim();
             if (name.Length == 0) { Fail("Please enter a property name."); return; }
 
@@ -94,6 +107,10 @@ namespace RentalManagementSystem.Presentation
 
             string roomType = SelectedText(cmbType);
             if (roomType.Length == 0) { Fail("Please choose a property type."); return; }
+
+            string priceText = txtPrice.Text.Replace("₱", "").Replace(",", "").Trim();
+            if (!decimal.TryParse(priceText, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal price) || price < 0)
+            { Fail("Price must be a number, 0 or more."); return; }
 
             if (!int.TryParse(txtBedrooms.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int bedrooms) || bedrooms < 0)
             { Fail("Bedrooms must be a whole number, 0 or more."); return; }
@@ -107,36 +124,44 @@ namespace RentalManagementSystem.Presentation
                 (!int.TryParse(sqftText, NumberStyles.Integer, CultureInfo.InvariantCulture, out sqft) || sqft < 0))
             { Fail("Size must be a whole number, 0 or more (or leave it empty)."); return; }
 
-            string priceText = txtPrice.Text.Replace("₱", "").Replace(",", "").Trim();
-            if (!decimal.TryParse(priceText, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal price) || price < 0)
-            { Fail("Price must be a number, 0 or more."); return; }
-
             if (!int.TryParse(txtCapacity.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int capacity) || capacity < 1)
             { Fail("Maximum capacity must be a whole number of at least 1."); return; }
 
-            if (!ucWater.TryValidate("water", out string utilError) ||
-                !ucElectricity.TryValidate("electricity", out utilError) ||
-                !ucWifi.TryValidate("Wi-Fi", out utilError))
-            { Fail(utilError); return; }
+            // Validate utility input rates
+            if (!decimal.TryParse(txtWaterRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal waterFee) || waterFee < 0)
+            { Fail("Please enter a valid water rate."); return; }
 
-            // ----- apply -----
+            if (!decimal.TryParse(txtElectricityRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal electricityFee) || electricityFee < 0)
+            { Fail("Please enter a valid electricity rate."); return; }
+
+            if (!decimal.TryParse(txtWifiRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal wifiFee) || wifiFee < 0)
+            { Fail("Please enter a valid Wi-Fi rate."); return; }
+
+            // Apply updates to model
             _property.Name = name;
             _property.Location = txtLocation.Text.Trim();
             _property.RoomType = roomType;
             _property.Type = roomType;
             _property.Floors = floors;
+            _property.Price = price;
             _property.Bedrooms = bedrooms;
             _property.Bathrooms = bathrooms;
             _property.SqFt = sqft;
-            _property.Price = price;
             _property.SetMaxCapacity(capacity);
+
             _property.SetUtilities(new UtilitySettings
             {
-                Water = ucWater.Option,
-                Electricity = ucElectricity.Option,
-                Wifi = ucWifi.Option
+                Water = chkWater.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = waterFee }
+                    : new UtilityOption { Included = true },
+                Electricity = chkElectricity.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.SubMetered, Amount = electricityFee }
+                    : new UtilityOption { Included = true },
+                Wifi = chkWifi.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = wifiFee }
+                    : new UtilityOption { Included = true }
             });
-            _property.Term = SelectedText(cmbTerm);
+
             _property.Status = SelectedText(cmbStatus);
             _property.Description = txtDescription.Text.Trim();
 
@@ -146,8 +171,7 @@ namespace RentalManagementSystem.Presentation
             DialogResult = true;
         }
 
-        // ---------- number-only text boxes ----------
-
+        // Number-only input constraints
         private static bool AllDigits(string? text) =>
             !string.IsNullOrEmpty(text) && text.All(c => c >= '0' && c <= '9');
 

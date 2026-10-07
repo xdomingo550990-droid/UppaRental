@@ -1,6 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using RentalManagementSystem.Presentation;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
-namespace RentalManagementSystem.Presentation
+// Change this namespace to match where your RentalProperty class lives
+namespace RentalManagementSystem
 {
     public static class RentalPropertyExtras
     {
@@ -8,6 +11,7 @@ namespace RentalManagementSystem.Presentation
         {
             public int MaxCapacity = 1;
             public UtilitySettings Utilities = new UtilitySettings();
+            public List<string> Amenities = new List<string>();
         }
 
         private static readonly ConditionalWeakTable<RentalProperty, Extras> Table = new();
@@ -23,5 +27,11 @@ namespace RentalManagementSystem.Presentation
 
         public static void SetUtilities(this RentalProperty p, UtilitySettings value) =>
             Table.GetOrCreateValue(p).Utilities = value ?? new UtilitySettings();
+
+        public static List<string> GetAmenities(this RentalProperty p) =>
+            Table.GetOrCreateValue(p).Amenities;
+
+        public static void SetAmenities(this RentalProperty p, List<string> value) =>
+            Table.GetOrCreateValue(p).Amenities = value ?? new List<string>();
     }
 }

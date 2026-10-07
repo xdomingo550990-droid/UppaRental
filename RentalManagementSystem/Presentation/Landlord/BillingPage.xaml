@@ -196,9 +196,12 @@
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- 1. Header -->
-            <RowDefinition Height="Auto"/> <!-- 2. Invoice form panel -->
-            <RowDefinition Height="*"/>    <!-- 3. Table card (Filters + DataGrid) -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1. Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. Invoice form panel -->
+            <RowDefinition Height="*"/>
+            <!-- 3. Table card (Filters + DataGrid) -->
         </Grid.RowDefinitions>
 
         <!-- 1. Header -->
@@ -262,11 +265,11 @@
                                 <TextBlock Text="Category" Style="{StaticResource FormLabel}"/>
                                 <Border Style="{StaticResource FormBox}">
                                     <ComboBox x:Name="CmbCategory" Style="{StaticResource FormCombo}">
-                                        <ComboBoxItem Content="Monthly Rent" IsSelected="True"/>
+                                        <ComboBoxItem Content="Daily Rent" IsSelected="True"/>
                                         <ComboBoxItem Content="Water Bill"/>
                                         <ComboBoxItem Content="Electric Bill"/>
                                         <ComboBoxItem Content="Security Deposit"/>
-                                        <ComboBoxItem Content="Penalty / Late Fee"/>
+                                        <ComboBoxItem Content="Wifi Bill"/>
                                     </ComboBox>
                                 </Border>
                             </StackPanel>
@@ -315,6 +318,7 @@
                                         <ComboBoxItem Content="Pending" IsSelected="True"/>
                                         <ComboBoxItem Content="Paid"/>
                                         <ComboBoxItem Content="Overdue"/>
+                                        <ComboBoxItem Content="Past"/>
                                     </ComboBox>
                                 </Border>
                             </StackPanel>
@@ -349,7 +353,7 @@
                                 </StackPanel>
                             </Button>
 
-                            <TextBlock Text="Delete removes the invoice selected in the table."
+                            <TextBlock Text="Delete moves the selected invoice to Past."
                                        FontSize="11" Foreground="#A9C2B0" TextWrapping="Wrap" Margin="2,2,0,0"/>
                         </StackPanel>
                     </Grid>
@@ -377,6 +381,8 @@
                     <RadioButton x:Name="RbPendingFilter" Content="Pending" Tag="Pending"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                     <RadioButton x:Name="RbOverdue" Content="Overdue" Tag="Overdue"
+                                 Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
+                    <RadioButton x:Name="RbPast" Content="Past" Tag="Past"
                                  Style="{StaticResource FilterPill}" Checked="Filter_Checked"/>
                 </StackPanel>
 
@@ -422,6 +428,9 @@
                                                 <Style TargetType="Button" BasedOn="{StaticResource LinkButton}">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Status}" Value="Paid">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Past">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>

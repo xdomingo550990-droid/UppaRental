@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -13,12 +13,13 @@ namespace RentalManagementSystem.Presentation
     public class PropertyFormResult
     {
         public string Name { get; set; } = "";
+        public string Location { get; set; } = "";
         public string Floor { get; set; } = "";        // same value as Floors, kept for older code
         public int Floors { get; set; }
         public int Bedrooms { get; set; }
         public int Bathrooms { get; set; }
         public string RoomType { get; set; } = "";
-        public decimal MonthlyRent { get; set; }
+        public decimal DailyRent { get; set; }          // was MonthlyRent
         public decimal SecurityDeposit { get; set; }
         public int SizeSqFt { get; set; }
         public int MaxCapacity { get; set; }
@@ -98,14 +99,7 @@ namespace RentalManagementSystem.Presentation
             {
                 if (string.IsNullOrWhiteSpace(txtRent.Text) || !decimal.TryParse(txtRent.Text.Replace(",", "").Trim(), out _))
                 {
-                    ShowError("Please enter a valid monthly rent amount.");
-                    return;
-                }
-                if (!ucWater.TryValidate("water", out string utilError) ||
-                    !ucElectricity.TryValidate("electricity", out utilError) ||
-                    !ucWifi.TryValidate("Wi-Fi", out utilError))
-                {
-                    ShowError(utilError);
+                    ShowError("Please enter a valid daily rent amount.");
                     return;
                 }
                 _currentStep = 3;
@@ -154,11 +148,24 @@ namespace RentalManagementSystem.Presentation
                 CultureInfo.InvariantCulture, out decimal size);
             if (rbSqm.IsChecked == true) size *= 10.7639m;
 
+            // Get landlord input rates (default to 0 if invalid or empty)
+            decimal.TryParse(txtWaterRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal waterFee);
+            decimal.TryParse(txtElectricityRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal electricityFee);
+            decimal.TryParse(txtWifiRate.Text.Replace(",", "").Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out decimal wifiFee);
+
+            // Checked   = billed to the tenant at the specified rate (not included in rent)
+            // Unchecked = included in rent
             var utilities = new UtilitySettings
             {
-                Water = ucWater.Option,
-                Electricity = ucElectricity.Option,
-                Wifi = ucWifi.Option
+                Water = chkWater.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = waterFee }
+                    : new UtilityOption { Included = true },
+                Electricity = chkElectricity.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.SubMetered, Amount = electricityFee }
+                    : new UtilityOption { Included = true },
+                Wifi = chkWifi.IsChecked == true
+                    ? new UtilityOption { Included = false, Billing = UtilityBilling.FixedMonthlyFee, Amount = wifiFee }
+                    : new UtilityOption { Included = true }
             };
 
             int.TryParse(txtFloors.Text.Trim(), out int floors);
@@ -178,12 +185,13 @@ namespace RentalManagementSystem.Presentation
             Result = new PropertyFormResult
             {
                 Name = txtName.Text.Trim(),
+                Location = txtLocation.Text.Trim(),
                 Floor = floors.ToString(CultureInfo.InvariantCulture),
                 Floors = floors,
                 Bedrooms = bedrooms,
                 Bathrooms = bathrooms,
                 RoomType = (cmbRoomType.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "",
-                MonthlyRent = rent,
+                DailyRent = rent,
                 SecurityDeposit = deposit,
                 SizeSqFt = (int)Math.Round(size),
                 MaxCapacity = capacity,

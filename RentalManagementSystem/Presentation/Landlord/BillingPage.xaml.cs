@@ -95,7 +95,7 @@ namespace RentalManagementSystem.Presentation
             new InvoiceRow { InvoiceNo = "INV-2003", Renter = "Ana Reyes",       Unit = "Unit 105", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" },
             new InvoiceRow { InvoiceNo = "INV-2004", Renter = "Mark Villanueva", Unit = "Unit 203", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 15000, Status = "Overdue" },
             new InvoiceRow { InvoiceNo = "INV-2005", Renter = "Carlo Mendoza",   Unit = "Unit 202", Period = "Oct 2026", DueDate = "Oct 15, 2026", Amount = 15000, Status = "Pending" },
-            new InvoiceRow { InvoiceNo = "INV-1998", Renter = "Liza Garcia",     Unit = "Unit 301", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 9800,  Status = "Paid" },
+            new InvoiceRow { InvoiceNo = "INV-1998", Renter = "Liza Garcia",     Unit = "Unit 301", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 9800,  Status = "Past" },
         };
 
         private readonly List<RenterOption> _renters = new List<RenterOption>
@@ -142,6 +142,9 @@ namespace RentalManagementSystem.Presentation
         {
             var inv = (InvoiceRow)item;
 
+            // When "All" is selected, hide "Past" invoices from the main active view
+            if (_statusFilter == "All" && inv.Status == "Past") return false;
+
             if (_statusFilter != "All" && inv.Status != _statusFilter) return false;
 
             if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
@@ -159,14 +162,17 @@ namespace RentalManagementSystem.Presentation
 
         private void UpdateSummary()
         {
+            var activeInvoices = _invoices.Where(i => i.Status != "Past").ToList();
             var paid = _invoices.Count(i => i.Status == "Paid");
             var pending = _invoices.Count(i => i.Status == "Pending");
             var overdue = _invoices.Count(i => i.Status == "Overdue");
+            var past = _invoices.Count(i => i.Status == "Past");
 
-            RbAll.Content = $"All ({_invoices.Count})";
+            RbAll.Content = $"All ({activeInvoices.Count})";
             RbPaid.Content = $"Paid ({paid})";
             RbPendingFilter.Content = $"Pending ({pending})";
             RbOverdue.Content = $"Overdue ({overdue})";
+            RbPast.Content = $"Past ({past})";
         }
 
         // ---------- Inline Form Controls ----------
@@ -264,12 +270,12 @@ namespace RentalManagementSystem.Presentation
         {
             if (DgInvoices.SelectedItem is InvoiceRow inv)
             {
-                var result = MessageBox.Show($"Are you sure you want to delete {inv.InvoiceNo}?",
+                var result = MessageBox.Show($"Are you sure you want to move {inv.InvoiceNo} to Past Invoices?",
                     "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    _invoices.Remove(inv);
+                    inv.Status = "Past";
                     _view.Refresh();
                     UpdateSummary();
                     ClearForm();

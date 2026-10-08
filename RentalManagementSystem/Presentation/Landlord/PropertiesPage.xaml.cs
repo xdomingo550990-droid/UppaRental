@@ -98,6 +98,12 @@ namespace RentalManagementSystem.Presentation
 
             if (editWindow.ShowDialog() == true)
             {
+                try { RentalManagementSystem.DAO.PropertyDao.Update(property); }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Saved locally, but the database update failed.\n\n{ex.Message}",
+                        "Save Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
                 LoadSections();
             }
         }
@@ -113,6 +119,14 @@ namespace RentalManagementSystem.Presentation
                 MessageBoxResult.No);
 
             if (answer != MessageBoxResult.Yes) return;
+
+            try { RentalManagementSystem.DAO.PropertyDao.Delete(property.PropertyId); }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not delete from the database.\n\n{ex.Message}",
+                    "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             _viewModel.Properties.Remove(property);
             LoadSections();

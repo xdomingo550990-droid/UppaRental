@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RentalManagementSystem.DAO;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -27,6 +28,9 @@ namespace RentalManagementSystem.Presentation
         public const string LongTerm = "Long-Term";
         public const string ShortTerm = "Short-Term";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        /// <summary>Primary key in renter_records (0 until saved to the database).</summary>
+        public int DbId { get; set; }
 
         public string Name { get; set; } = "";
         public string Unit { get; set; } = "";
@@ -132,38 +136,14 @@ namespace RentalManagementSystem.Presentation
         private const string DateFormat = "MMM dd, yyyy";
         private const string AllUnits = "All Properties / Units";
 
-        // Monthly rate of every unit. Used to pre-fill the rent when you reserve a unit (long-term).
-        // TODO: load these from your DAO / Service (same source as the Properties page).
-        private static readonly Dictionary<string, decimal> UnitRates = new()
-        {
-            ["Unit 101"] = 10000m,
-            ["Unit 102"] = 10000m,
-            ["Unit 105"] = 12500m,
-            ["Unit 201"] = 15000m,
-            ["Unit 202"] = 15000m,
-            ["Unit 203"] = 20000m,
-            ["Unit 204"] = 20000m,
-            ["Unit 301"] = 25000m,
-            ["Unit 302"] = 25000m,
-            ["Unit 401"] = 30000m,
-            ["Unit 402"] = 30000m,
-        };
+        // Monthly rate of every unit, loaded from the properties table (sample fallback when DB is down).
+        private static readonly Dictionary<string, decimal> UnitRates = LoadUnitRates();
         private readonly string[] _statuses = { "Active", "Pending", "Past" };
 
         /// <summary>Available / Reserved / Occupied for every unit, recalculated whenever a record changes.</summary>
         private readonly Dictionary<string, string> _unitStatus = new Dictionary<string, string>();
 
-        private readonly ObservableCollection<RenterRow> _renters = new ObservableCollection<RenterRow>
-        {
-            new RenterRow { Name = "Juan Dela Cruz",   Unit = "Unit 101", Contact = "0917 123 4567", Email = "juan.dc@email.com",  Address = "Tagum City",  LeaseStart = "Jan 15, 2026", LeaseEnd = "Jan 14, 2027", Rate = 12500, Months = 12, Status = "Active" },
-            new RenterRow { Name = "Maria Santos",     Unit = "Unit 204", Contact = "0918 765 4321", Email = "maria.s@email.com",  Address = "Davao City",  LeaseStart = "Mar 01, 2026", LeaseEnd = "Feb 28, 2027", Rate = 9800,  Months = 12, Status = "Active" },
-            new RenterRow { Name = "Ana Reyes",        Unit = "Unit 105", Contact = "0922 555 0148", Email = "ana.reyes@email.com", Address = "Digos City", LeaseStart = "Jun 10, 2026", LeaseEnd = "Jun 09, 2027", Rate = 12500, Months = 12, Status = "Active" },
-            new RenterRow { Name = "Mark Villanueva",  Unit = "Unit 203", Contact = "0916 880 3392", Email = "mark.v@email.com",   Address = "Davao City",  LeaseStart = "Feb 01, 2026", LeaseEnd = "Jan 31, 2027", Rate = 15000, Months = 12, Status = "Active" },
-            new RenterRow { Name = "Carlo Mendoza",    Unit = "Unit 202", Contact = "0905 222 7781", Email = "carlo.m@email.com",  Address = "Mati City",   LeaseStart = "Oct 15, 2026", LeaseEnd = "Oct 14, 2027", Rate = 15000, Months = 12, Status = "Pending" },
-            // Past renters stay on file with their history (sample unpaid balance shown here)
-            new RenterRow { Name = "Liza Garcia",      Unit = "Unit 301", Contact = "0999 310 4426", Email = "liza.g@email.com",   Address = "Panabo City", LeaseStart = "Sep 01, 2025", LeaseEnd = "Aug 31, 2026", Rate = 9800,  Months = 12, Status = "Past",
-                           IsArchived = true, MoveOutDate = new DateTime(2026, 8, 31), ArchiveReason = "Lease ended" },
-        };
+        private readonly ObservableCollection<RenterRow> _renters = LoadRenters();
 
         private ICollectionView _view = null!;
         private RenterRow? _editing;
@@ -178,6 +158,50 @@ namespace RentalManagementSystem.Presentation
         private bool IsShortTerm => (TermCombo.SelectedItem as string) == RenterRow.ShortTerm;
         private bool IsConverting => _editing != null && _editing.IsReservation && !IsReservationMode;
 
+        // ---------- Database loading (with in-memory fallback so the page always opens) ----------
+
+        private static Dictionary<string, decimal> LoadUnitRates()
+        {
+            try
+            {
+                var rates = RenterDao.GetUnitRates();
+                if (rates.Count > 0) return rates;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unit rate load failed: {ex.Message}");
+            }
+
+            return new Dictionary<string, decimal>
+            {
+                ["Unit 101"] = 10000m,
+                ["Unit 102"] = 10000m,
+                ["Unit 105"] = 12500m,
+                ["Unit 201"] = 15000m,
+                ["Unit 202"] = 15000m,
+                ["Unit 203"] = 20000m,
+                ["Unit 204"] = 20000m,
+                ["Unit 301"] = 25000m,
+                ["Unit 302"] = 25000m,
+                ["Unit 401"] = 30000m,
+                ["Unit 402"] = 30000m,
+            };
+        }
+
+        private static ObservableCollection<RenterRow> LoadRenters()
+        {
+            try
+            {
+                var rows = RenterDao.GetAll();
+                return new ObservableCollection<RenterRow>(rows);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Renter load failed: {ex.Message}");
+                return new ObservableCollection<RenterRow>();
+            }
+        }
+
         public RentersPage()
         {
             InitializeComponent();
@@ -190,12 +214,6 @@ namespace RentalManagementSystem.Presentation
             TermCombo.ItemsSource = new[] { RenterRow.ShortTerm, RenterRow.LongTerm };
             TermCombo.SelectedItem = RenterRow.LongTerm;
 
-            // The sample renters that are not Pending have already moved in
-            foreach (var r in _renters.Where(r => r.Status != "Pending")) r.MoveInRecorded = true;
-            _renters.First(r => r.Status == "Past").Log("Unpaid utilities (Aug 2026)", 1250m);   // sample data
-
-            SeedSampleReservations();
-
             _view = CollectionViewSource.GetDefaultView(_renters);
             _view.Filter = Matches;
             dgRenters.ItemsSource = _view;
@@ -206,36 +224,6 @@ namespace RentalManagementSystem.Presentation
 
             _ready = true;
             ApplyMode();
-        }
-
-        // Sample reservations (delete once your DAO supplies real ones)
-        private void SeedSampleReservations()
-        {
-            AddSampleReservation("Paolo Ramirez", "0917 808 9090", "paolo.r@email.com", "Unit 102", 3, 6, true);
-            AddSampleReservation("Grace Tan", "0918 555 0142", "grace.t@email.com", "Unit 302", 10, 12, true);
-            AddSampleReservation("Daniel Cruz", "0917 123 8801", "daniel.c@email.com", "Unit 401", 20, 6, false);
-        }
-
-        private void AddSampleReservation(string name, string phone, string email, string unit, int moveInDays, int months, bool paid)
-        {
-            DateTime start = DateTime.Today.AddDays(moveInDays);
-            var row = new RenterRow
-            {
-                Name = name,
-                Contact = phone,
-                Email = email,
-                Unit = unit,
-                LeaseStart = start.ToString(DateFormat, Inv),
-                LeaseEnd = start.AddMonths(months).AddDays(-1).ToString(DateFormat, Inv),
-                Rate = UnitRates[unit],
-                Months = months,
-                Status = "Pending",
-                IsReservation = true,
-                ReservationPaid = paid,
-                HoldUntil = start
-            };
-            if (paid) RecordReservationPayment(row);
-            _renters.Add(row);
         }
 
         // ---------- Global Search Hook (called by DashboardPage's top search bar) ----------
@@ -680,7 +668,16 @@ namespace RentalManagementSystem.Presentation
             if (res && paid) RecordReservationPayment(row);
             if (recordMoveIn) RecordMoveIn(row, advance, deposit, credit);
 
-            // TODO: save `row` and its Transactions through your DAO / Service here (insert or update)
+            // Persist to the database (insert new, update existing).
+            try
+            {
+                if (isEdit && row.DbId > 0) RenterDao.Update(row);
+                else RenterDao.Insert(row);
+            }
+            catch (Exception ex)
+            {
+                ShowMessage($"Saved locally, but the database write failed: {ex.Message}", true);
+            }
 
             _view.Refresh();
             UpdateSummary();
@@ -748,7 +745,16 @@ namespace RentalManagementSystem.Presentation
             target.ArchiveReason = isRes ? "Reservation cancelled" : "Moved out";
             target.Log(isRes ? "Reservation cancelled" : "Moved out / lease terminated", 0m);
 
-            // TODO: save the archived `target` (status Past + MoveOutDate) and set the unit to Available through your DAO / Service here
+            // Persist the archive (status Past + move-out date).
+            try
+            {
+                RenterDao.Archive(target.DbId,
+                    target.MoveOutDate ?? DateTime.Today, target.ArchiveReason);
+            }
+            catch (Exception ex)
+            {
+                ShowMessage($"Archived locally, but the database update failed: {ex.Message}", true);
+            }
 
             _view.Refresh();
             UpdateSummary();

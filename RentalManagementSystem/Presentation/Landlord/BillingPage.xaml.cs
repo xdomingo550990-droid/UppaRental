@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RentalManagementSystem.DAO;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,6 +16,9 @@ namespace RentalManagementSystem.Presentation
         public string Name { get; set; } = "";
         public string Unit { get; set; } = "";
         public decimal DefaultRent { get; set; }
+
+        /// <summary>Tenant account matched by email, or null when the renter has no account.</summary>
+        public int? UserId { get; set; }
     }
 
     public class InvoiceRow : INotifyPropertyChanged
@@ -26,6 +30,9 @@ namespace RentalManagementSystem.Presentation
         private decimal _amount;
         private string _period = "";
         private string _dueDate = "";
+
+        /// <summary>Tenant account this invoice belongs to (null when the renter has no account).</summary>
+        public int? UserId { get; set; }
 
         public string InvoiceNo
         {
@@ -88,25 +95,40 @@ namespace RentalManagementSystem.Presentation
 
     public partial class BillingPage : UserControl
     {
-        private readonly ObservableCollection<InvoiceRow> _invoices = new ObservableCollection<InvoiceRow>
-        {
-            new InvoiceRow { InvoiceNo = "INV-2001", Renter = "Juan Dela Cruz",  Unit = "Unit 101", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" },
-            new InvoiceRow { InvoiceNo = "INV-2002", Renter = "Maria Santos",    Unit = "Unit 204", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 9800,  Status = "Paid" },
-            new InvoiceRow { InvoiceNo = "INV-2003", Renter = "Ana Reyes",       Unit = "Unit 105", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 12500, Status = "Paid" },
-            new InvoiceRow { InvoiceNo = "INV-2004", Renter = "Mark Villanueva", Unit = "Unit 203", Period = "Oct 2026", DueDate = "Oct 05, 2026", Amount = 15000, Status = "Overdue" },
-            new InvoiceRow { InvoiceNo = "INV-2005", Renter = "Carlo Mendoza",   Unit = "Unit 202", Period = "Oct 2026", DueDate = "Oct 15, 2026", Amount = 15000, Status = "Pending" },
-            new InvoiceRow { InvoiceNo = "INV-1998", Renter = "Liza Garcia",     Unit = "Unit 301", Period = "Aug 2026", DueDate = "Aug 05, 2026", Amount = 9800,  Status = "Paid" },
-        };
+        private readonly ObservableCollection<InvoiceRow> _invoices = LoadInvoices();
+        private readonly List<RenterOption> _renters = LoadRenterOptions();
 
-        private readonly List<RenterOption> _renters = new List<RenterOption>
+        // ---------- Database loading ----------
+
+        private static ObservableCollection<InvoiceRow> LoadInvoices()
         {
-            new RenterOption { Name = "Juan Dela Cruz", Unit = "Unit 101", DefaultRent = 12500 },
-            new RenterOption { Name = "Maria Santos", Unit = "Unit 204", DefaultRent = 9800 },
-            new RenterOption { Name = "Ana Reyes", Unit = "Unit 105", DefaultRent = 12500 },
-            new RenterOption { Name = "Mark Villanueva", Unit = "Unit 203", DefaultRent = 15000 },
-            new RenterOption { Name = "Carlo Mendoza", Unit = "Unit 202", DefaultRent = 15000 },
-            new RenterOption { Name = "Liza Garcia", Unit = "Unit 301", DefaultRent = 9800 }
-        };
+            try
+            {
+                return new ObservableCollection<InvoiceRow>(InvoiceDao.GetAll());
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Invoice load failed: {ex.Message}");
+                return new ObservableCollection<InvoiceRow>();
+            }
+        }
+
+        private static List<RenterOption> LoadRenterOptions()
+        {
+            try
+            {
+                return InvoiceDao.GetRenterOptions();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Renter list load failed: {ex.Message}");
+                return new List<RenterOption>();
+            }
+        }
+
+        private static void ShowDbWarning(string action, Exception ex) =>
+            MessageBox.Show($"Saved on screen, but the database {action} failed.\n\n{ex.Message}",
+                "Save Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
 
         private ICollectionView _view = null!;
         private string _statusFilter = "All";
@@ -193,7 +215,7 @@ namespace RentalManagementSystem.Presentation
                 TxtAmount.Text = inv.Amount.ToString("F2");
                 TxtPeriod.Text = inv.Period;
 
-                if (DateTime.TryParse(inv.DueDate, out var dt))
+                if (DateTime.TryParse(inv.DueDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
                     DpDueDate.SelectedDate = dt;
 
                 foreach (ComboBoxItem item in CmbStatus.Items)
@@ -222,32 +244,44 @@ namespace RentalManagementSystem.Presentation
             }
 
             string status = (CmbStatus.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Pending";
-            string dueDateStr = DpDueDate.SelectedDate?.ToString("MMM dd, yyyy") ?? DateTime.Today.ToString("MMM dd, yyyy");
+            string dueDateStr = (DpDueDate.SelectedDate ?? DateTime.Today).ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
 
             if (_selectedInvoice != null)
             {
                 // UPDATE existing record
+                _selectedInvoice.UserId = renter.UserId;
                 _selectedInvoice.Renter = renter.Name;
                 _selectedInvoice.Unit = renter.Unit;
                 _selectedInvoice.Amount = amt;
                 _selectedInvoice.Period = TxtPeriod.Text;
                 _selectedInvoice.DueDate = dueDateStr;
                 _selectedInvoice.Status = status;
+
+                try { InvoiceDao.Update(_selectedInvoice); }
+                catch (Exception ex) { ShowDbWarning("update", ex); }
             }
             else
             {
                 // INSERT new record
-                string newInvNo = "INV-" + (2000 + _invoices.Count + 1);
-                _invoices.Insert(0, new InvoiceRow
+                string newInvNo;
+                try { newInvNo = InvoiceDao.NextInvoiceNo(); }
+                catch { newInvNo = "INV-" + (2000 + _invoices.Count + 1); }
+
+                var row = new InvoiceRow
                 {
                     InvoiceNo = newInvNo,
+                    UserId = renter.UserId,
                     Renter = renter.Name,
                     Unit = renter.Unit,
                     Amount = amt,
                     Period = TxtPeriod.Text,
                     DueDate = dueDateStr,
                     Status = status
-                });
+                };
+                _invoices.Insert(0, row);
+
+                try { InvoiceDao.Insert(row); }
+                catch (Exception ex) { ShowDbWarning("save", ex); }
             }
 
             _view.Refresh();
@@ -264,11 +298,23 @@ namespace RentalManagementSystem.Presentation
         {
             if (DgInvoices.SelectedItem is InvoiceRow inv)
             {
-                var result = MessageBox.Show($"Are you sure you want to delete {inv.InvoiceNo}?",
+                string note = inv.Status == "Paid"
+                    ? "\n\nThis invoice is marked Paid. Deleting it also removes its payment record."
+                    : "";
+
+                var result = MessageBox.Show($"Are you sure you want to delete {inv.InvoiceNo}?{note}",
                     "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
                 if (result == MessageBoxResult.Yes)
                 {
+                    try { InvoiceDao.Delete(inv.InvoiceNo); }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Could not delete from the database.\n\n{ex.Message}",
+                            "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
                     _invoices.Remove(inv);
                     _view.Refresh();
                     UpdateSummary();
@@ -302,6 +348,10 @@ namespace RentalManagementSystem.Presentation
             if (((FrameworkElement)sender).DataContext is InvoiceRow inv)
             {
                 inv.Status = "Paid";
+
+                try { InvoiceDao.MarkPaid(inv.InvoiceNo); }
+                catch (Exception ex) { ShowDbWarning("update", ex); }
+
                 _view.Refresh();
                 UpdateSummary();
             }

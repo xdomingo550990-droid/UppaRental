@@ -1,4 +1,5 @@
 #nullable disable
+using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
 using RentalManagementSystem.Presentation;
 using System;
@@ -33,6 +34,9 @@ namespace RentalManagementSystem.Presentation
     {
         private static readonly Dictionary<string, ImageSource> PhotoCache = new Dictionary<string, ImageSource>();
         private string _description = "";
+
+        /// <summary>Database primary key (0 when not yet persisted / sample data).</summary>
+        public int DbId { get; set; }
 
         public string Name { get; set; } = "";
         public string Location { get; set; } = "";
@@ -143,22 +147,122 @@ namespace RentalManagementSystem.Presentation
     {
         public const string DefaultImage = "pack://application:,,,/Resources/Images/houseImage1.jpg";
 
-        public static ObservableCollection<RentalProperty> All { get; } = new ObservableCollection<RentalProperty>(Seed());
+        // Loaded from the database.
+        public static ObservableCollection<RentalProperty> All { get; } =
+            new ObservableCollection<RentalProperty>(Load());
 
-        public static void Add(RentalProperty property) => All.Insert(0, property);
+        public static void Add(RentalProperty property)
+        {
+            try
+            {
+                var model = ToModel(property);
+                PropertyDao.Insert(model);
+                property.DbId = model.PropertyId;
+                All.Insert(0, property);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not save the property.\n\n{ex.Message}",
+                                "Save Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
 
         /// <summary>Deletes a property from the shared list. Returns false if it wasn't found.</summary>
-        public static bool Remove(RentalProperty property) => All.Remove(property);
+        public static bool Remove(RentalProperty property)
+        {
+            bool removed = All.Remove(property);
+
+            if (removed && property.DbId > 0)
+            {
+                try { PropertyDao.Delete(property.DbId); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Property delete failed: {ex.Message}"); }
+            }
+            return removed;
+        }
 
         /// <summary>
         /// Call after a property's fields were changed in place. Re-sets the item so
-        /// CollectionChanged fires for anything listening to <see cref="All"/>.
-        /// (If you add a database later, save the changes here.)
+        /// CollectionChanged fires for anything listening to <see cref="All"/>,
+        /// and persists the change to the database.
         /// </summary>
         public static void NotifyUpdated(RentalProperty property)
         {
             int index = All.IndexOf(property);
             if (index >= 0) All[index] = property;
+
+            if (property.DbId > 0)
+            {
+                try { PropertyDao.Update(ToModel(property)); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Property update failed: {ex.Message}"); }
+            }
+        }
+
+        // ---------- Database load / mapping ----------
+
+        private static List<RentalProperty> Load()
+        {
+            try
+            {
+                return PropertyDao.GetAll().Select(FromModel).ToList();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Property load failed: {ex.Message}");
+                MessageBox.Show($"Could not load properties from the database.\n\n{ex.Message}",
+                                "Database Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return new List<RentalProperty>();
+            }
+        }
+
+        private static RentalProperty FromModel(Property p)
+        {
+            string primaryImage = (p.PhotoPaths != null && p.PhotoPaths.Count > 0)
+                ? p.PhotoPaths[0]
+                : DefaultImage;
+
+            return new RentalProperty
+            {
+                DbId = p.PropertyId,
+                Name = p.Name,
+                Location = p.Location,
+                Type = p.PropertyType.ToString(),
+                RoomType = p.PropertyType.ToString(),
+                Floors = p.NumberOfFloors > 0 ? p.NumberOfFloors : 1,
+                Bedrooms = p.NumberOfRooms,
+                Bathrooms = p.NumberofBathrooms,
+                SqFt = p.SizeUnit,
+                Price = p.MonthlyRent,
+                Status = string.IsNullOrWhiteSpace(p.Status) ? "Available" : p.Status,
+                Term = "Long term",
+                Popularity = p.InquiryCount,
+                ImagePath = primaryImage,
+                Description = string.IsNullOrWhiteSpace(p.Description) ? p.Notes : p.Description,
+                IsNew = false
+            };
+        }
+
+        private static Property ToModel(RentalProperty r)
+        {
+            if (!Enum.TryParse(r.Type, true, out PropertyType type))
+                type = PropertyType.Studio;
+
+            return new Property
+            {
+                PropertyId = r.DbId,
+                Name = r.Name,
+                Location = r.Location,
+                PropertyType = type,
+                NumberOfFloors = r.Floors,
+                NumberOfRooms = r.Bedrooms,
+                NumberofBathrooms = r.Bathrooms,
+                SizeUnit = r.SqFt,
+                MonthlyRent = (int)r.Price,
+                Status = r.Status,
+                Description = r.Description,
+                Notes = r.Description,
+                PhotoPaths = new List<string> { r.ImagePath },
+                InquiryCount = r.Popularity
+            };
         }
 
         // ---------- From the Add Property popup ----------
@@ -277,59 +381,6 @@ namespace RentalManagementSystem.Presentation
                 });
             }
             return result;
-        }
-
-        // ---------- Sample data: replace with your real properties (database / DAO) ----------
-
-        private static List<RentalProperty> Seed()
-        {
-            return new List<RentalProperty>
-            {
-                P("Sunrise Cottage",      "Garden District", "Cottage",    2, 1,  780,   9500, "Available", "Long term",  86, "Bright two-bedroom cottage with a sunny garden and a quiet street."),
-                P("Maple Nook Cottage",   "Riverside",       "Cottage",    1, 1,  520,   7800, "Occupied",  "Long term",  64, "Cozy one-bedroom nook with a small porch near the riverbank."),
-                P("Lakeview Cottage",     "Lakeside Row",    "Cottage",    2, 1,  860,   2400, "Available", "Short term", 92, "Lake-facing cottage with a deck, perfect for weekend stays."),
-                P("Willow Cottage",       "Old Town",        "Cottage",    1, 1,  480,   1800, "Reserved",  "Short term", 71, "Compact cottage in the old town, steps from cafes and shops."),
-                P("Cedar Cottage",        "Hillcrest",       "Cottage",    3, 2, 1100,  14500, "Occupied",  "Long term",  58, "Family-sized cottage with a large kitchen and room to grow."),
-
-                P("Pine Ridge Chalet",    "Hillcrest",       "Chalet",     3, 2, 1450,  18000, "Occupied",  "Long term",  79, "Timber chalet on the ridge with a stone fireplace and valley views."),
-                P("Alpine Chalet",        "Highland View",   "Chalet",     4, 3, 2050,   5200, "Available", "Short term", 95, "Spacious four-bedroom chalet with a hot tub and mountain views."),
-                P("Birchwood Chalet",     "Highland View",   "Chalet",     2, 2, 1120,   3600, "Reserved",  "Short term", 83, "Warm birchwood interior with a wraparound balcony."),
-                P("Stonebridge Chalet",   "Riverside",       "Chalet",     3, 2, 1380,  16500, "Available", "Long term",  67, "Stone-built chalet near the river with a private garden."),
-                P("Fernhill Chalet",      "Hillcrest",       "Chalet",     2, 1,  960,  12000, "Reserved",  "Long term",  55, "Quiet hillside chalet with a cozy loft bedroom."),
-
-                P("Skyline Penthouse",    "City Center",     "Penthouse",  3, 3, 2408,  45000, "Occupied",  "Long term",  97, "Top-floor penthouse with floor-to-ceiling windows and a private terrace."),
-                P("Harbor View Penthouse","Harbor Row",      "Penthouse",  4, 3, 3050,   9500, "Available", "Short term", 90, "Luxury penthouse overlooking the harbor, ideal for short getaways."),
-                P("Crown Penthouse",      "City Center",     "Penthouse",  2, 2, 1680,  32000, "Available", "Long term",  88, "Modern penthouse in the city center with a rooftop lounge."),
-                P("Atrium Penthouse",     "Old Town",        "Penthouse",  3, 2, 2150,   6800, "Occupied",  "Short term", 74, "Light-filled penthouse built around a glass atrium."),
-                P("Summit Penthouse",     "Harbor Row",      "Penthouse",  2, 2, 1520,  28500, "Reserved",  "Long term",  69, "Upper-level penthouse with skyline views and secure parking."),
-
-                P("Meadow Farmhouse",     "Greenfield",      "Farmhouse",  4, 2, 2300,  22000, "Available", "Long term",  81, "Country farmhouse with a wide porch and open meadow views."),
-                P("Orchard Farmhouse",    "Greenfield",      "Farmhouse",  3, 2, 1850,   4200, "Available", "Short term", 85, "Farmhouse surrounded by fruit trees, great for family retreats."),
-                P("Brookside Farmhouse",  "Riverside",       "Farmhouse",  3, 2, 1700,  17500, "Occupied",  "Long term",  62, "Rustic farmhouse beside a stream with a spacious yard."),
-                P("Harvest Farmhouse",    "Greenfield",      "Farmhouse",  5, 3, 2900,   4900, "Occupied",  "Short term", 77, "Large five-bedroom farmhouse for group stays and gatherings."),
-                P("Barn Loft Farmhouse",  "Old Town",        "Farmhouse",  1, 1,  640,   8200, "Occupied",  "Long term",  52, "Converted barn loft with exposed beams and a compact kitchen."),
-            };
-        }
-
-        private static RentalProperty P(string name, string location, string type, int beds, int baths, int sqft,
-                                        decimal price, string status, string term, int popularity, string description)
-        {
-            return new RentalProperty
-            {
-                Name = name,
-                Location = location,
-                Type = type,
-                RoomType = type,
-                Bedrooms = beds,
-                Bathrooms = baths,
-                SqFt = sqft,
-                Price = price,
-                Status = status,
-                Term = term,
-                Popularity = popularity,
-                ImagePath = DefaultImage,
-                Description = description
-            };
         }
     }
 }

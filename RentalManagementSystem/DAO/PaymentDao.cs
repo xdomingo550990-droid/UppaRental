@@ -1,5 +1,6 @@
 using MySql.Data.MySqlClient;   // If your project uses MySqlConnector, change this to: using MySqlConnector;
 using RentalManagementSystem.Model;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -8,16 +9,12 @@ namespace RentalManagementSystem.DAO
 {
     public static class PaymentDao
     {
-        // TODO: replace with the same connection string / helper your other DAOs use.
-        private const string ConnectionString =
-            "Server=127.0.0.1;Port=3306;Database=rental_db;Uid=root;Pwd=;";
-
         /// <summary>All payments made by one user, newest first.</summary>
         public static List<Payment> GetByUser(int userId)
         {
             var list = new List<Payment>();
 
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = DatabaseHelper.GetConnection();
             conn.Open();
 
             const string sql = @"
@@ -59,7 +56,7 @@ namespace RentalManagementSystem.DAO
         /// </summary>
         public static void Insert(Payment p)
         {
-            using var conn = new MySqlConnection(ConnectionString);
+            using var conn = DatabaseHelper.GetConnection();
             conn.Open();
             using var tx = conn.BeginTransaction();
 

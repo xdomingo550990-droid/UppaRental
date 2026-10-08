@@ -67,13 +67,8 @@ namespace RentalManagementSystem.Presentation
             dgInvoices.ItemsSource = _view;
             dgHistory.ItemsSource = _historyView;
 
-            LoggedInUser = UserSession.CurrentUser;
+            LoggedInUser = loggedInUser ?? UserSession.CurrentUser;
             Loaded += TenantBillingPage_Loaded;
-        }
-
-        public TenantBillingPage(User loggedInUser) : this()
-        {
-            LoggedInUser = loggedInUser;
         }
 
         private void TenantBillingPage_Loaded(object sender, RoutedEventArgs e)
@@ -200,7 +195,7 @@ namespace RentalManagementSystem.Presentation
             if (_statusFilter != "All" && !inv.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            string q = PaymentHistoryVm.SearchQuery;
+            string q = _globalSearchQuery;
             if (string.IsNullOrEmpty(q)) return true;
 
             return inv.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
@@ -274,9 +269,17 @@ namespace RentalManagementSystem.Presentation
             // Tab Counters
             tabInvoices.Content = $"Invoices ({_invoices.Count})";
             UpdateHistoryTabHeader();
+        }
 
-            // The history total text is bound in XAML to PaymentHistoryVm.HeaderSummaryText,
-            // so it no longer needs to be set here.
+        private void UpdateHistoryTabHeader()
+        {
+            tabHistory.Content = $"Payment History ({_payments.Count})";
+
+            if (txtHistoryTotal != null)
+            {
+                decimal totalPaid = _payments.Sum(p => p.Amount);
+                txtHistoryTotal.Text = $"Total paid: {Peso(totalPaid)}  •  {_payments.Count} payment(s)";
+            }
         }
 
         #endregion
@@ -389,7 +392,7 @@ namespace RentalManagementSystem.Presentation
 
         private void Receipt_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is Payment p)
+            if (((FrameworkElement)sender).DataContext is TenantPayment p)
             {
                 MessageBox.Show(
                     $"Receipt Number: {p.ReceiptNo}\n\nInvoice: {p.InvoiceNo} ({p.Period})\nDate Paid: {p.DatePaidText}\n" +

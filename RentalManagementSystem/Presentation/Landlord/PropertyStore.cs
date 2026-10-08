@@ -197,6 +197,21 @@ namespace RentalManagementSystem.Presentation
             }
         }
 
+        /// <summary>Updates the in-memory status of each property (by name) so open pages refresh. Does not touch the database.</summary>
+        public static void SyncStatuses(IDictionary<string, string> statusByName)
+        {
+            for (int i = 0; i < All.Count; i++)
+            {
+                var p = All[i];
+                if (p.IsDraft) continue;
+                if (statusByName.TryGetValue(p.Name, out var status) && p.Status != status)
+                {
+                    p.Status = status;
+                    All[i] = p;   // re-set so CollectionChanged fires
+                }
+            }
+        }
+
         // ---------- Database load / mapping ----------
 
         private static List<RentalProperty> Load()

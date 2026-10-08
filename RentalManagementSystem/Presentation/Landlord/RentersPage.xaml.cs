@@ -136,7 +136,7 @@ namespace RentalManagementSystem.Presentation
         private const string DateFormat = "MMM dd, yyyy";
         private const string AllUnits = "All Properties / Units";
 
-        // Monthly rate of every unit, loaded from the properties table (sample fallback when DB is down).
+        // Monthly rate of every unit, loaded from the properties table.
         private static readonly Dictionary<string, decimal> UnitRates = LoadUnitRates();
         private readonly string[] _statuses = { "Active", "Pending", "Past" };
 
@@ -158,7 +158,7 @@ namespace RentalManagementSystem.Presentation
         private bool IsShortTerm => (TermCombo.SelectedItem as string) == RenterRow.ShortTerm;
         private bool IsConverting => _editing != null && _editing.IsReservation && !IsReservationMode;
 
-        // ---------- Database loading (with in-memory fallback so the page always opens) ----------
+        // ---------- Database loading ----------
 
         private static Dictionary<string, decimal> LoadUnitRates()
         {
@@ -172,31 +172,22 @@ namespace RentalManagementSystem.Presentation
                 System.Diagnostics.Debug.WriteLine($"Unit rate load failed: {ex.Message}");
             }
 
-            return new Dictionary<string, decimal>
-            {
-                ["Unit 101"] = 10000m,
-                ["Unit 102"] = 10000m,
-                ["Unit 105"] = 12500m,
-                ["Unit 201"] = 15000m,
-                ["Unit 202"] = 15000m,
-                ["Unit 203"] = 20000m,
-                ["Unit 204"] = 20000m,
-                ["Unit 301"] = 25000m,
-                ["Unit 302"] = 25000m,
-                ["Unit 401"] = 30000m,
-                ["Unit 402"] = 30000m,
-            };
+            return new Dictionary<string, decimal>();
         }
+
+        private static bool _rentersLoadedOk;
 
         private static ObservableCollection<RenterRow> LoadRenters()
         {
             try
             {
                 var rows = RenterDao.GetAll();
+                _rentersLoadedOk = true;
                 return new ObservableCollection<RenterRow>(rows);
             }
             catch (Exception ex)
             {
+                _rentersLoadedOk = false;
                 System.Diagnostics.Debug.WriteLine($"Renter load failed: {ex.Message}");
                 return new ObservableCollection<RenterRow>();
             }
@@ -289,7 +280,24 @@ namespace RentalManagementSystem.Presentation
                 _unitStatus[u] = holder == null ? "Available" : holder.Status == "Active" ? "Occupied" : "Reserved";
             }
 
-            // TODO: save _unitStatus through your DAO / Service so the Properties page lists freed units as Available
+            PersistUnitStatuses();
+        }
+
+        /// <summary>Saves each unit's Available / Reserved / Occupied status to the properties table and the shared Properties list.</summary>
+        private void PersistUnitStatuses()
+        {
+            // If the renter list failed to load, every unit would look free: never write that to the database.
+            if (!_rentersLoadedOk) return;
+
+            try
+            {
+                PropertyDao.UpdateStatuses(_unitStatus);
+                PropertyStore.SyncStatuses(_unitStatus);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unit status save failed: {ex.Message}");
+            }
         }
 
         public string GetUnitStatus(string unit) =>

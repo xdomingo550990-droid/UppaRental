@@ -1,4 +1,5 @@
 using MySql.Data.MySqlClient;
+using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
 using RentalManagementSystem.Services;
 using System;
@@ -98,40 +99,14 @@ namespace RentalManagementSystem.Presentation
 
             try
             {
-                using (var conn = DatabaseHelper.GetConnection())
-                {
-                    conn.Open();
-                    string sql = @"SELECT reservation_no, unit_label, move_in_date, term_months, 
-                                         total_rent, downpayment_amount, status 
-                                  FROM reservations 
-                                  WHERE tenant_id = @tenantId";
-
-                    using (var cmd = new MySqlCommand(sql, conn))
-                    {
-                        cmd.Parameters.AddWithValue("@tenantId", loggedInUser.getUserId());
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                _reservations.Add(new ReservationRow
-                                {
-                                    ReservationNo = reader["reservation_no"]?.ToString() ?? "",
-                                    UnitLabel = reader["unit_label"]?.ToString() ?? "",
-                                    MoveInDate = reader["move_in_date"] != DBNull.Value ? Convert.ToDateTime(reader["move_in_date"]) : (DateTime?)null,
-                                    TermMonths = reader["term_months"] != DBNull.Value ? Convert.ToInt32(reader["term_months"]) : 0,
-                                    TotalRent = reader["total_rent"] != DBNull.Value ? Convert.ToDecimal(reader["total_rent"]) : 0m,
-                                    DownpaymentAmount = reader["downpayment_amount"] != DBNull.Value ? Convert.ToDecimal(reader["downpayment_amount"]) : 0m,
-                                    Status = reader["status"]?.ToString() ?? "Pending"
-                                });
-                            }
-                        }
-                    }
-                }
+                foreach (var row in ReservationDao.GetByUser(loggedInUser.getUserId()))
+                    _reservations.Add(row);
             }
             catch (Exception ex)
             {
-                // Handles database connectivity errors gracefully
                 System.Diagnostics.Debug.WriteLine($"Error loading reservations: {ex.Message}");
+                MessageBox.Show($"Could not load your reservations.\n\n{ex.Message}",
+                                "Database Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
             _view.Refresh();
@@ -185,13 +160,14 @@ namespace RentalManagementSystem.Presentation
             txtEmpty.Visibility = _view.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        // Pending -> Confirmed once the 20% downpayment is paid.
+        // Pending -> Confirmed once the downpayment is paid (saved to reservations + payments).
         private void PayDown_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is not MyReservationRow r) return;
+            if (((FrameworkElement)sender).DataContext is not ReservationRow r) return;
+            if (loggedInUser == null || r.Status != "Pending") return;
 
             var answer = MessageBox.Show(
-                $"Pay the 20% downpayment of {r.DownText} for {r.Unit}?",
+                $"Pay the downpayment of {r.DownText} for {r.UnitLabel}?",
                 "Confirm downpayment",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question,
@@ -199,13 +175,17 @@ namespace RentalManagementSystem.Presentation
 
             if (answer != MessageBoxResult.Yes) return;
 
-            // TODO: process the payment through your payment gateway / DAO here,
-            // and only confirm the reservation once it succeeds.
-            r.Status = "Confirmed";
-
-            RefreshView();
-            UpdateSummary();
-            MessageBox.Show($"Downpayment received. {r.Unit} is now reserved for you.", "My Reservations");
+            try
+            {
+                string receipt = ReservationDao.PayDownpayment(r.ReservationId, loggedInUser.getUserId(), r.DownpaymentAmount);
+                LoadReservationsFromDb();
+                MessageBox.Show($"Downpayment received (receipt {receipt}). {r.UnitLabel} is now reserved for you.", "My Reservations");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not process the downpayment.\n\n{ex.Message}",
+                                "Payment Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         private void UpdateSummary()
         {
@@ -255,10 +235,11 @@ namespace RentalManagementSystem.Presentation
         }
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender).DataContext is not MyReservationRow r) return;
+            if (((FrameworkElement)sender).DataContext is not ReservationRow r) return;
+            if (r.Status == "Cancelled") return;
 
             var answer = MessageBox.Show(
-                $"Cancel reservation {r.ReservationNo} for {r.Unit}?\nThe unit will become available to others again.",
+                $"Cancel reservation {r.ReservationNo} for {r.UnitLabel}?\nThe unit will become available to others again.",
                 "Cancel reservation",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
@@ -266,16 +247,23 @@ namespace RentalManagementSystem.Presentation
 
             if (answer != MessageBoxResult.Yes) return;
 
-            // TODO: cancel `r` through your DAO / Service here (and free the unit on the landlord side).
-            r.Status = "Cancelled";
-
-            UpdateSummary();
+            try
+            {
+                ReservationDao.UpdateStatus(r.ReservationId, "Cancelled");
+                LoadReservationsFromDb();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not cancel the reservation.\n\n{ex.Message}",
+                                "Database Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
     }
 
     public class ReservationRow
     {
+        public int ReservationId { get; set; }
         public string ReservationNo { get; set; }
         public string UnitLabel { get; set; }
         public DateTime? MoveInDate { get; set; }

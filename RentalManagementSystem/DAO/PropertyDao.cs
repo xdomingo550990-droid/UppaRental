@@ -114,6 +114,25 @@ namespace RentalManagementSystem.DAO
             return cmd.ExecuteNonQuery() > 0;
         }
 
+        /// <summary>
+        /// Sets status (Available / Reserved / Occupied) for properties matched by name.
+        /// Draft properties are left alone, and unchanged rows are not touched.
+        /// </summary>
+        public static void UpdateStatuses(IDictionary<string, string> statusByName)
+        {
+            using var conn = DatabaseHelper.GetConnection();
+            conn.Open();
+
+            foreach (var kv in statusByName)
+            {
+                using var cmd = new MySqlCommand(
+                    "UPDATE properties SET status = @s WHERE name = @n AND IFNULL(status, '') <> 'Draft' AND IFNULL(status, '') <> @s", conn);
+                cmd.Parameters.AddWithValue("@s", kv.Value);
+                cmd.Parameters.AddWithValue("@n", kv.Key);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         // --------------------------------------------------------------------
 
         private static void BindParameters(MySqlCommand cmd, Property p)

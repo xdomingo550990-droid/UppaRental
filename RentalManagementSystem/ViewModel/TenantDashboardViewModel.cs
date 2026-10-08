@@ -277,7 +277,7 @@ namespace RentalManagementSystem.ViewModel
 
         public void LoadTenantById(int userId)
         {
-            string query = "SELECT user_id, username, password, role, full_name, email, created_at FROM users WHERE user_id = @userId LIMIT 1";
+            string query = "SELECT user_id, username, password, role, first_name, last_name, email_address, created_at FROM users WHERE user_id = @userId LIMIT 1";
 
             try
             {
@@ -303,8 +303,9 @@ namespace RentalManagementSystem.ViewModel
                                     loadedUser.setRole(parsedRole);
                                 }
 
-                                loadedUser.setFullName(reader.IsDBNull(reader.GetOrdinal("full_name")) ? "" : reader.GetString("full_name"));
-                                loadedUser.setEmailAddress(reader.IsDBNull(reader.GetOrdinal("email")) ? "" : reader.GetString("email"));
+                                loadedUser.setFirstName(reader.IsDBNull(reader.GetOrdinal("first_name")) ? "" : reader.GetString("first_name"));
+                                loadedUser.setLastName(reader.IsDBNull(reader.GetOrdinal("last_name")) ? "" : reader.GetString("last_name"));
+                                loadedUser.setEmailAddress(reader.IsDBNull(reader.GetOrdinal("email_address")) ? "" : reader.GetString("email_address"));
 
                                 if (!reader.IsDBNull(reader.GetOrdinal("created_at")))
                                 {
@@ -327,7 +328,7 @@ namespace RentalManagementSystem.ViewModel
         {
             if (UserId <= 0) return;
 
-            string query = "SELECT user_id, username, password, role, full_name, email, created_at FROM users WHERE user_id = @userId";
+            string query = "SELECT user_id, username, password, role, first_name, last_name, email_address, created_at FROM users WHERE user_id = @userId";
 
             try
             {
@@ -343,8 +344,9 @@ namespace RentalManagementSystem.ViewModel
                             if (reader.Read())
                             {
                                 _user.setUsername(reader.IsDBNull(reader.GetOrdinal("username")) ? "" : reader.GetString("username"));
-                                _user.setFullName(reader.IsDBNull(reader.GetOrdinal("full_name")) ? "" : reader.GetString("full_name"));
-                                _user.setEmailAddress(reader.IsDBNull(reader.GetOrdinal("email")) ? "" : reader.GetString("email"));
+                                _user.setFirstName(reader.IsDBNull(reader.GetOrdinal("first_name")) ? "" : reader.GetString("first_name"));
+                                _user.setLastName(reader.IsDBNull(reader.GetOrdinal("last_name")) ? "" : reader.GetString("last_name"));
+                                _user.setEmailAddress(reader.IsDBNull(reader.GetOrdinal("email_address")) ? "" : reader.GetString("email_address"));
 
                                 RefreshAllProperties();
                             }
@@ -362,8 +364,8 @@ namespace RentalManagementSystem.ViewModel
         {
             if (UserId <= 0) return;
 
-            string reservationsQuery = "SELECT COUNT(*) FROM reservations WHERE user_id = @userId AND status = 'Active'";
-            string billingQuery = "SELECT IFNULL(SUM(amount), 0) FROM bills WHERE user_id = @userId AND status = 'Pending'";
+            string reservationsQuery = "SELECT COUNT(*) FROM reservations WHERE (user_id = @userId OR renter_id = @userId) AND status IN ('Pending', 'Confirmed')";
+            string billingQuery = "SELECT IFNULL(SUM(amount), 0) FROM invoices WHERE user_id = @userId AND status IN ('Pending', 'Overdue')";
 
             try
             {

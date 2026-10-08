@@ -139,11 +139,10 @@ namespace RentalManagementSystem.Presentation
                     }
 
                     // 2. Fetch Payment History Receipts from MySQL
-                    string historyQuery = @"SELECT p.receipt_no, i.invoice_no, p.period, p.date_paid, p.method, p.reference, p.amount 
-                                           FROM payments p
-                                           INNER JOIN invoices i ON p.invoice_id = i.invoice_id
-                                           WHERE p.user_id = @userId 
-                                           ORDER BY p.date_paid DESC";
+                    string historyQuery = @"SELECT receipt_number, invoice_number, period, payment_date, payment_method, reference_number, amount
+                                           FROM payments
+                                           WHERE user_id = @userId
+                                           ORDER BY payment_date DESC, payment_id DESC";
 
                     using (var cmd = new MySqlCommand(historyQuery, conn))
                     {
@@ -154,12 +153,12 @@ namespace RentalManagementSystem.Presentation
                             {
                                 _payments.Add(new TenantPayment
                                 {
-                                    ReceiptNo = reader.GetString("receipt_no"),
-                                    InvoiceNo = reader.GetString("invoice_no"),
+                                    ReceiptNo = reader.IsDBNull(reader.GetOrdinal("receipt_number")) ? "" : reader.GetString("receipt_number"),
+                                    InvoiceNo = reader.IsDBNull(reader.GetOrdinal("invoice_number")) ? "" : reader.GetString("invoice_number"),
                                     Period = reader.GetString("period"),
-                                    DatePaid = reader.GetDateTime("date_paid"),
-                                    Method = reader.GetString("method"),
-                                    Reference = reader.IsDBNull(reader.GetOrdinal("reference")) ? "—" : reader.GetString("reference"),
+                                    DatePaid = reader.GetDateTime("payment_date"),
+                                    Method = reader.IsDBNull(reader.GetOrdinal("payment_method")) ? "" : reader.GetString("payment_method"),
+                                    Reference = reader.IsDBNull(reader.GetOrdinal("reference_number")) || reader.GetString("reference_number") == "" ? "—" : reader.GetString("reference_number"),
                                     Amount = reader.GetDecimal("amount")
                                 });
                             }
@@ -323,57 +322,67 @@ namespace RentalManagementSystem.Presentation
 
             try
             {
+                string receiptNo;
+
                 using (var conn = DatabaseHelper.GetConnection())
                 {
                     conn.Open();
                     using (var transaction = conn.BeginTransaction())
                     {
-                        // 1. Get invoice ID
-                        int invoiceId = 0;
-                        string getInvoiceIdQuery = "SELECT invoice_id FROM invoices WHERE invoice_no = @invoiceNo AND user_id = @userId LIMIT 1";
-                        using (var cmd = new MySqlCommand(getInvoiceIdQuery, conn, transaction))
+                        // 1. Mark the invoice Paid (only if still unpaid, so it can never be paid twice)
+                        int changed;
+                        using (var cmd = new MySqlCommand(
+                            "UPDATE invoices SET status = 'Paid' WHERE invoice_no = @invoiceNo AND user_id = @userId AND status <> 'Paid'",
+                            conn, transaction))
                         {
                             cmd.Parameters.AddWithValue("@invoiceNo", inv.InvoiceNo);
                             cmd.Parameters.AddWithValue("@userId", userId);
-                            var obj = cmd.ExecuteScalar();
-                            if (obj != null) invoiceId = Convert.ToInt32(obj);
+                            changed = cmd.ExecuteNonQuery();
                         }
 
-                        // 2. Update Invoice status in MySQL
-                        string updateInvoiceQuery = "UPDATE invoices SET status = 'Paid' WHERE invoice_no = @invoiceNo AND user_id = @userId";
-                        using (var cmd = new MySqlCommand(updateInvoiceQuery, conn, transaction))
+                        if (changed == 0)
                         {
-                            cmd.Parameters.AddWithValue("@invoiceNo", inv.InvoiceNo);
-                            cmd.Parameters.AddWithValue("@userId", userId);
-                            cmd.ExecuteNonQuery();
+                            transaction.Rollback();
+                            MessageBox.Show("This invoice has already been paid.", "Billing and Payments", MessageBoxButton.OK, MessageBoxImage.Information);
+                            LoadDataFromDatabase();
+                            return;
                         }
 
-                        // 3. Create and Insert Payment Record in MySQL
-                        string receiptNo = "RCT-" + DateTime.Now.ToString("yyyyMMddHHmmss", Culture);
-                        string refNo = "REF-" + Guid.NewGuid().ToString().Substring(0, 8).ToUpper();
-
-                        string insertPaymentQuery = @"INSERT INTO payments (receipt_no, invoice_id, user_id, period, date_paid, method, reference, amount)
-                                                      VALUES (@receiptNo, @invoiceId, @userId, @period, @datePaid, 'Online Payment', @reference, @amount)";
-
-                        using (var cmd = new MySqlCommand(insertPaymentQuery, conn, transaction))
+                        // 2. Record the payment (column names match the payments table)
+                        string refNo = "REF-" + DateTime.Now.ToString("yyyyMMddHHmmss", Culture);
+                        long paymentId;
+                        using (var cmd = new MySqlCommand(@"
+                            INSERT INTO payments (user_id, payment_date, amount, payment_method, reference_number, invoice_number, period)
+                            VALUES (@userId, @datePaid, @amount, 'Online payment', @reference, @invoiceNo, @period)",
+                            conn, transaction))
                         {
-                            cmd.Parameters.AddWithValue("@receiptNo", receiptNo);
-                            cmd.Parameters.AddWithValue("@invoiceId", invoiceId);
                             cmd.Parameters.AddWithValue("@userId", userId);
-                            cmd.Parameters.AddWithValue("@period", inv.Period);
                             cmd.Parameters.AddWithValue("@datePaid", DateTime.Now);
-                            cmd.Parameters.AddWithValue("@reference", refNo);
                             cmd.Parameters.AddWithValue("@amount", inv.Amount);
+                            cmd.Parameters.AddWithValue("@reference", refNo);
+                            cmd.Parameters.AddWithValue("@invoiceNo", inv.InvoiceNo);
+                            cmd.Parameters.AddWithValue("@period", inv.Period);
+                            cmd.ExecuteNonQuery();
+                            paymentId = cmd.LastInsertedId;
+                        }
+
+                        // 3. Receipt number from the payment id (RCT-0001, ...), same as PaymentDao
+                        receiptNo = "RCT-" + paymentId.ToString("D4", Culture);
+                        using (var cmd = new MySqlCommand(
+                            "UPDATE payments SET receipt_number = @receipt WHERE payment_id = @id", conn, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@receipt", receiptNo);
+                            cmd.Parameters.AddWithValue("@id", paymentId);
                             cmd.ExecuteNonQuery();
                         }
 
                         transaction.Commit();
-
-                        MessageBox.Show($"Payment recorded successfully!\nReceipt Number: {receiptNo}", "Payment Successful", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 }
 
-                // Reload fresh state from Database
+                MessageBox.Show($"Payment recorded successfully!\nReceipt Number: {receiptNo}", "Payment Successful", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Reload fresh state from the database
                 LoadDataFromDatabase();
             }
             catch (Exception ex)

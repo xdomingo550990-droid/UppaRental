@@ -1,4 +1,5 @@
 ﻿using System;
+using RentalManagementSystem.Services;
 using System.Configuration;
 using System.Windows;
 using System.Windows.Controls;
@@ -24,6 +25,32 @@ namespace RentalManagementSystem.Presentation
 
             // Overview is the page shown when the dashboard opens
             MainContentFrame.Content = new OverviewPage();
+            LoadSidebarProfile();
+        }
+
+        /// <summary>Shows the logged-in landlord's name and unit count in the sidebar profile card.</summary>
+        private void LoadSidebarProfile()
+        {
+            try
+            {
+                var user = UserSession.CurrentUser;
+                if (user == null) return;
+
+                string fullName = $"{user.FirstName} {user.LastName}".Trim();
+                if (fullName.Length == 0) fullName = user.Username;
+                int units = PropertyStore.All.Count;
+
+                btnSettings.ApplyTemplate();
+                if (btnSettings.Template.FindName("txtSbName", btnSettings) is TextBlock name) name.Text = fullName;
+                if (btnSettings.Template.FindName("txtSbAvatar", btnSettings) is TextBlock avatar)
+                    avatar.Text = fullName.Length > 0 ? fullName.Substring(0, 1).ToUpper() : "L";
+                if (btnSettings.Template.FindName("txtSbRole", btnSettings) is TextBlock role)
+                    role.Text = $"Landlord • {units} {(units == 1 ? "unit" : "units")}";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Sidebar profile load failed: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -76,6 +103,8 @@ namespace RentalManagementSystem.Presentation
                 nameof(btnSettings) => new ProfilePage(),    // profile card at the bottom of the sidebar
                 _ => MainContentFrame.Content
             };
+
+            LoadSidebarProfile();   // picks up a name or unit-count change
         }
 
         // Sends what you type in the top search bar to the page that is open

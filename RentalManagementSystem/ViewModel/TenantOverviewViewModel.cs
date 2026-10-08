@@ -168,8 +168,11 @@ namespace RentalManagementSystem.ViewModel
             var properties = new List<Property>();
 
             string query = @"SELECT name, location, number_of_rooms, number_of_floors, number_of_bathrooms,
-                                    maximum_capacity, security_deposit, monthly_rent, description, status, property_type
-                             FROM properties";
+                                    maximum_capacity, security_deposit, monthly_rent, description, status, property_type,
+                                    photo_paths
+                             FROM properties
+                             WHERE IFNULL(status, '') <> 'Draft'
+                             ORDER BY property_id DESC";
 
             try
             {
@@ -195,6 +198,11 @@ namespace RentalManagementSystem.ViewModel
                                 MonthlyRent = GetDbInt(reader, "monthly_rent"),
                                 Description = GetDbString(reader, "description"),
                                 Status = GetDbString(reader, "status"),
+                                PhotoPaths = GetDbString(reader, "photo_paths")
+                                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(s => s.Trim())
+                                    .Where(s => s.Length > 0)
+                                    .ToList(),
                                 PropertyType = Enum.TryParse<PropertyType>(propertyTypeStr, true, out var parsedType)
                                     ? parsedType
                                     : PropertyType.Studio

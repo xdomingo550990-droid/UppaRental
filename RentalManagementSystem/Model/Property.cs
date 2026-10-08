@@ -52,7 +52,9 @@ namespace RentalManagementSystem.Model
         // UI Display Properties (Required by PropertyCardStyle.xaml bindings)
         // =========================================================================
 
-        public string Photo => "/Assets/placeholder.png"; // Set path or fallback image
+        public string Photo => PhotoPaths != null && PhotoPaths.Count > 0
+            ? PhotoPaths[0]
+            : "pack://application:,,,/Resources/Images/houseImage1.jpg"; // first uploaded photo, else the default house image
 
         public string BedroomsText => $"{NumberOfRooms} {(NumberOfRooms == 1 ? "Bed" : "Beds")}";
 

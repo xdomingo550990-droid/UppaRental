@@ -61,63 +61,92 @@ namespace RentalManagementSystem.Presentation
             || new[] { r.C1, r.C2, r.C3, r.C4, r.C5, r.Status }
                 .Any(s => !string.IsNullOrEmpty(s) && s.Contains(_query, StringComparison.OrdinalIgnoreCase));
 
+        private static bool _dbErrorShown;
+
         private List<Lease> GetLeasesFromDb()
         {
             var list = new List<Lease>();
 
             try
             {
-                using (var conn = DatabaseHelper.GetConnection())
+                using var conn = DatabaseHelper.GetConnection();
+                conn.Open();
+
+                // 1. Every non-draft property is a unit
+                var units = new Dictionary<string, (string Type, decimal Rent, DateTime Created)>(StringComparer.OrdinalIgnoreCase);
+                using (var cmd = new MySqlCommand(
+                    "SELECT name, property_type, monthly_rent, created_at FROM properties WHERE IFNULL(status, '') <> 'Draft'", conn))
+                using (var reader = cmd.ExecuteReader())
                 {
-                    conn.Open();
-
-                    // Queries lease, unit, tenant, and payment records from MySQL
-                    string sql = @"
-                        SELECT 
-                            COALESCE(l.lease_code, CONCAT('LS-', l.lease_id)) AS lease_code,
-                            COALESCE(u.unit_label, u.unit_number, '—') AS unit_name,
-                            COALESCE(u.unit_type, 'Standard') AS unit_type,
-                            TRIM(CONCAT(COALESCE(usr.first_name, ''), ' ', COALESCE(usr.last_name, ''))) AS tenant_name,
-                            l.start_date,
-                            l.end_date,
-                            COALESCE(l.monthly_rent, u.monthly_rate, 0) AS rent,
-                            COALESCE(l.updated_at, l.start_date, NOW()) AS updated_at,
-                            COALESCE(p.payment_status, 'Paid') AS payment_status
-                        FROM leases l
-                        LEFT JOIN units u ON l.unit_id = u.unit_id
-                        LEFT JOIN users usr ON l.tenant_id = usr.user_id
-                        LEFT JOIN (
-                            SELECT lease_id, payment_status 
-                            FROM payments 
-                            ORDER BY payment_date DESC
-                        ) p ON l.lease_id = p.lease_id";
-
-                    using (var cmd = new MySqlCommand(sql, conn))
-                    using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            string tenantName = reader["tenant_name"]?.ToString() ?? "";
-                            if (string.IsNullOrWhiteSpace(tenantName)) tenantName = "—";
-
-                            list.Add(new Lease(
-                                Code: reader["lease_code"]?.ToString() ?? "—",
-                                Unit: reader["unit_name"]?.ToString() ?? "—",
-                                UnitType: reader["unit_type"]?.ToString() ?? "—",
-                                Tenant: tenantName,
-                                Start: reader["start_date"] != DBNull.Value ? Convert.ToDateTime(reader["start_date"]) : DateTime.Today,
-                                End: reader["end_date"] != DBNull.Value ? Convert.ToDateTime(reader["end_date"]) : DateTime.Today.AddYears(1),
-                                Rent: reader["rent"] != DBNull.Value ? Convert.ToDecimal(reader["rent"]) : 0m,
-                                Updated: reader["updated_at"] != DBNull.Value ? Convert.ToDateTime(reader["updated_at"]) : DateTime.Today,
-                                Payment: reader["payment_status"]?.ToString() ?? "Paid"
-                            ));
-                        }
+                        string name = reader["name"]?.ToString() ?? "";
+                        if (name.Length == 0) continue;
+                        units[name] = (
+                            reader["property_type"]?.ToString() ?? "Standard",
+                            reader["monthly_rent"] != DBNull.Value ? Convert.ToDecimal(reader["monthly_rent"]) : 0m,
+                            reader["created_at"] != DBNull.Value ? Convert.ToDateTime(reader["created_at"]) : DateTime.Today);
                     }
+                }
+
+                // 2. Current renters (leases): not archived, not reservations. Payment status = latest invoice for that renter + unit.
+                var occupied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                const string sql = @"
+                    SELECT rr.renter_id, rr.name, rr.unit, rr.lease_start, rr.lease_end, rr.rental_term,
+                           rr.rate, rr.days, rr.created_at,
+                           (SELECT i.status FROM invoices i
+                             WHERE i.renter = rr.name AND i.unit = rr.unit
+                             ORDER BY i.due_date DESC, i.invoice_id DESC LIMIT 1) AS payment_status
+                    FROM renter_records rr
+                    WHERE rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'";
+
+                using (var cmd = new MySqlCommand(sql, conn))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        string unit = reader["unit"]?.ToString() ?? "—";
+                        string tenant = reader["name"]?.ToString() ?? "";
+                        if (string.IsNullOrWhiteSpace(tenant)) tenant = "—";
+
+                        decimal rate = reader["rate"] != DBNull.Value ? Convert.ToDecimal(reader["rate"]) : 0m;
+                        int days = reader["days"] != DBNull.Value ? Convert.ToInt32(reader["days"]) : 0;
+                        bool shortTerm = (reader["rental_term"]?.ToString() ?? "") == "Short-Term";
+                        DateTime created = reader["created_at"] != DBNull.Value ? Convert.ToDateTime(reader["created_at"]) : DateTime.Today;
+                        string type = units.TryGetValue(unit, out var info) ? info.Type : "Standard";
+
+                        list.Add(new Lease(
+                            Code: "LS-" + Convert.ToInt32(reader["renter_id"]).ToString("D4"),
+                            Unit: unit,
+                            UnitType: type,
+                            Tenant: tenant,
+                            Start: reader["lease_start"] != DBNull.Value ? Convert.ToDateTime(reader["lease_start"]) : created,
+                            End: reader["lease_end"] != DBNull.Value ? Convert.ToDateTime(reader["lease_end"]) : created.AddYears(1),
+                            Rent: shortTerm ? rate * days : rate,
+                            Updated: created,
+                            Payment: reader["payment_status"]?.ToString() ?? "No invoice"));
+
+                        occupied.Add(unit);
+                    }
+                }
+
+                // 3. Units nobody currently holds show up as Vacant
+                foreach (var kv in units)
+                {
+                    if (occupied.Contains(kv.Key)) continue;
+                    list.Add(new Lease("—", kv.Key, kv.Value.Type, "—", DateTime.Today, DateTime.Today,
+                                       kv.Value.Rent, kv.Value.Created, "—"));
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error querying database in OverviewPage: {ex.Message}");
+                if (!_dbErrorShown)
+                {
+                    _dbErrorShown = true;
+                    MessageBox.Show($"Could not load report data.\n\n{ex.Message}", "Database Error",
+                                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
 
             return list;

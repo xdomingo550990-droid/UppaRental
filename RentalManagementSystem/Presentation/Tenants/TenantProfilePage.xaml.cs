@@ -1,3 +1,4 @@
+using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
 using System;
 using System.Windows;
@@ -23,6 +24,21 @@ namespace RentalManagementSystem.Presentation
         private void LoadUserData()
         {
             if (loggedInUser == null) return;
+
+            try
+            {
+                // Login does not load the phone number, so fetch the saved profile
+                var fresh = UserDao.GetById(loggedInUser.getUserId());
+                if (fresh != null)
+                {
+                    loggedInUser.setPhone(fresh.Phone);
+                    if (!string.IsNullOrWhiteSpace(fresh.EmailAddress)) loggedInUser.setEmailAddress(fresh.EmailAddress);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Profile load failed: {ex.Message}");
+            }
 
             string firstName = loggedInUser.getFirstName() ?? "";
             string lastName = loggedInUser.getLastName() ?? "";
@@ -65,8 +81,16 @@ namespace RentalManagementSystem.Presentation
                 SetUserEmail(loggedInUser, txtEmail?.Text?.Trim() ?? "");
                 SetUserPhone(loggedInUser, txtPhone?.Text?.Trim() ?? "");
 
-                // TODO: Save changes to database / DAO
-                // UserDAO.UpdateUser(loggedInUser);
+                try
+                {
+                    UserDao.UpdateProfile(loggedInUser);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Could not save your profile.\n\n{ex.Message}", "Profile",
+                                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             MessageBox.Show("Your profile has been saved.", "Profile");

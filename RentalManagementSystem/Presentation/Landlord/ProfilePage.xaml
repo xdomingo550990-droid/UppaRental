@@ -55,7 +55,7 @@
                                     <Border Background="#E8F0E9" CornerRadius="10" Padding="10,2">
                                         <TextBlock Text="Landlord" FontSize="11" FontWeight="SemiBold" Foreground="#2F5D3A"/>
                                     </Border>
-                                    <TextBlock Text="6 units" FontSize="12" Foreground="#607464"
+                                    <TextBlock x:Name="txtUnits" Text="6 units" FontSize="12" Foreground="#607464"
                                                VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>

@@ -103,12 +103,12 @@
                                 BorderBrush="Transparent" BorderThickness="1">
                             <StackPanel Orientation="Horizontal">
                                 <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
-                                    <TextBlock Text="K" Foreground="White" FontWeight="Bold" FontSize="14"
+                                    <TextBlock x:Name="txtSbAvatar" Text="K" Foreground="White" FontWeight="Bold" FontSize="14"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Kim Vincent Domingo" FontWeight="Bold" FontSize="13" Foreground="White"/>
-                                    <TextBlock Text="Landlord • 6 units" FontSize="11" Foreground="#A9BFAE"/>
+                                    <TextBlock x:Name="txtSbName" Text="Kim Vincent Domingo" FontWeight="Bold" FontSize="13" Foreground="White"/>
+                                    <TextBlock x:Name="txtSbRole" Text="Landlord • 6 units" FontSize="11" Foreground="#A9BFAE"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

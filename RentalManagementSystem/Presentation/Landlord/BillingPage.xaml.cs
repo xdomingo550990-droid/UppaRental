@@ -1,4 +1,4 @@
-﻿using RentalManagementSystem.DAO;
+using RentalManagementSystem.DAO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,9 +30,25 @@ namespace RentalManagementSystem.Presentation
         private decimal _amount;
         private string _period = "";
         private string _dueDate = "";
+        private bool _isPast;
 
         /// <summary>Tenant account this invoice belongs to (null when the renter has no account).</summary>
         public int? UserId { get; set; }
+
+        /// <summary>
+        /// True when the landlord "deleted" the invoice and it was moved to the Past list.
+        /// Kept in memory only (see the note in DeleteInvoice_Click about saving it to the database).
+        /// </summary>
+        public bool IsPast
+        {
+            get => _isPast;
+            set
+            {
+                if (_isPast == value) return;
+                _isPast = value;
+                OnPropertyChanged(nameof(IsPast));
+            }
+        }
 
         public string InvoiceNo
         {
@@ -164,7 +180,17 @@ namespace RentalManagementSystem.Presentation
         {
             var inv = (InvoiceRow)item;
 
-            if (_statusFilter != "All" && inv.Status != _statusFilter) return false;
+            if (_statusFilter == "Past")
+            {
+                // The Past tab shows only invoices the landlord has deleted
+                if (!inv.IsPast) return false;
+            }
+            else
+            {
+                // Every other tab hides past invoices
+                if (inv.IsPast) return false;
+                if (_statusFilter != "All" && inv.Status != _statusFilter) return false;
+            }
 
             if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
 
@@ -181,14 +207,18 @@ namespace RentalManagementSystem.Presentation
 
         private void UpdateSummary()
         {
-            var paid = _invoices.Count(i => i.Status == "Paid");
-            var pending = _invoices.Count(i => i.Status == "Pending");
-            var overdue = _invoices.Count(i => i.Status == "Overdue");
+            // Counts only cover current invoices; past ones have their own count
+            var current = _invoices.Where(i => !i.IsPast).ToList();
+            var paid = current.Count(i => i.Status == "Paid");
+            var pending = current.Count(i => i.Status == "Pending");
+            var overdue = current.Count(i => i.Status == "Overdue");
+            var past = _invoices.Count(i => i.IsPast);
 
-            RbAll.Content = $"All ({_invoices.Count})";
+            RbAll.Content = $"All ({current.Count})";
             RbPaid.Content = $"Paid ({paid})";
             RbPendingFilter.Content = $"Pending ({pending})";
             RbOverdue.Content = $"Overdue ({overdue})";
+            RbPast.Content = $"Past ({past})";
         }
 
         // ---------- Inline Form Controls ----------
@@ -294,37 +324,64 @@ namespace RentalManagementSystem.Presentation
             ClearForm();
         }
 
+        /// <summary>
+        /// Delete works in two steps:
+        ///   1. On a current invoice it moves the invoice to the Past tab (nothing is removed from the database).
+        ///   2. On an invoice that is already in Past it deletes the invoice permanently.
+        ///
+        /// NOTE: the Past flag only lives in memory, so past invoices go back to their normal tab the
+        /// next time the page is opened. To keep them in Past permanently, add an "IsPast" (or "Archived")
+        /// column to the invoice table and save it from here and from Restore_Click.
+        /// </summary>
         private void DeleteInvoice_Click(object sender, RoutedEventArgs e)
         {
-            if (DgInvoices.SelectedItem is InvoiceRow inv)
-            {
-                string note = inv.Status == "Paid"
-                    ? "\n\nThis invoice is marked Paid. Deleting it also removes its payment record."
-                    : "";
-
-                var result = MessageBox.Show($"Are you sure you want to delete {inv.InvoiceNo}?{note}",
-                    "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    try { InvoiceDao.Delete(inv.InvoiceNo); }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Could not delete from the database.\n\n{ex.Message}",
-                            "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    _invoices.Remove(inv);
-                    _view.Refresh();
-                    UpdateSummary();
-                    ClearForm();
-                }
-            }
-            else
+            if (DgInvoices.SelectedItem is not InvoiceRow inv)
             {
                 MessageBox.Show("Please select an invoice from the table to delete.", "No Selection");
+                return;
             }
+
+            if (!inv.IsPast)
+            {
+                // Step 1: move to Past
+                var move = MessageBox.Show(
+                    $"Move {inv.InvoiceNo} to Past invoices?\n\nYou can restore it later, or delete it permanently from the Past tab.",
+                    "Move to Past", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (move != MessageBoxResult.Yes) return;
+
+                inv.IsPast = true;
+                ClearForm();
+                UpdateSummary();
+
+                // Take the landlord to the Past tab so they can see where it went
+                RbPast.IsChecked = true;
+                return;
+            }
+
+            // Step 2: permanent delete (invoice is already in Past)
+            string note = inv.Status == "Paid"
+                ? "\n\nThis invoice is marked Paid. Deleting it also removes its payment record."
+                : "";
+
+            var result = MessageBox.Show(
+                $"Permanently delete {inv.InvoiceNo}? This cannot be undone.{note}",
+                "Confirm Permanent Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try { InvoiceDao.Delete(inv.InvoiceNo); }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Could not delete from the database.\n\n{ex.Message}",
+                    "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            _invoices.Remove(inv);
+            _view.Refresh();
+            UpdateSummary();
+            ClearForm();
         }
 
         private void ClearForm()
@@ -351,6 +408,20 @@ namespace RentalManagementSystem.Presentation
 
                 try { InvoiceDao.MarkPaid(inv.InvoiceNo); }
                 catch (Exception ex) { ShowDbWarning("update", ex); }
+
+                _view.Refresh();
+                UpdateSummary();
+            }
+        }
+
+        /// <summary>Moves an invoice from Past back to the normal tabs.</summary>
+        private void Restore_Click(object sender, RoutedEventArgs e)
+        {
+            if (((FrameworkElement)sender).DataContext is InvoiceRow inv)
+            {
+                inv.IsPast = false;
+
+                if (_selectedInvoice == inv) ClearForm();
 
                 _view.Refresh();
                 UpdateSummary();

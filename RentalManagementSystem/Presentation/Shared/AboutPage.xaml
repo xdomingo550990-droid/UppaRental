@@ -187,7 +187,7 @@
                         </Border>
                         <TextBlock Text="Renters" Style="{StaticResource CardTitle}"/>
                         <TextBlock Style="{StaticResource CardText}"
-                                   Text="Track renter profiles, reservations and messages in a single place."/>
+                                   Text="Track renter profiles and reservations in a single place."/>
                     </StackPanel>
                 </Border>
                 <Border Style="{StaticResource Card}" Margin="10,0">

@@ -1,11 +1,12 @@
 ﻿#nullable disable
+using RentalManagementSystem.Model;
+using RentalManagementSystem.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using RentalManagementSystem.Model;
-using RentalManagementSystem.ViewModel;
+using System.Windows.Media;
 
 namespace RentalManagementSystem.Presentation
 {
@@ -13,6 +14,7 @@ namespace RentalManagementSystem.Presentation
     {
         private string _filter = "All";
         private readonly LandlordViewModel _viewModel;
+        private User loggedInUser; // Track logged in user
 
         public UnitsPage()
         {
@@ -20,16 +22,21 @@ namespace RentalManagementSystem.Presentation
             _viewModel = new LandlordViewModel();
             DataContext = _viewModel;
 
-            // Refresh layout whenever properties in DB collection change
             _viewModel.Properties.CollectionChanged += (s, e) => LoadSections();
-
             LoadSections();
+        }
+
+        // Constructor overload to receive loggedInUser
+        public UnitsPage(User loggedInUser) : this()
+        {
+            this.loggedInUser = loggedInUser;
         }
 
         // ---------- Add Property Popup ----------
 
         private void AddProperty_Click(object sender, RoutedEventArgs e)
         {
+            // Pass loggedInUser if AddPropertyWindow supports it, or handle it via ViewModel
             var addWindow = new AddPropertyWindow
             {
                 Owner = Window.GetWindow(this)
@@ -38,6 +45,9 @@ namespace RentalManagementSystem.Presentation
             if (addWindow.ShowDialog() == true && addWindow.Result != null)
             {
                 var form = addWindow.Result;
+
+                // Check if user is a Landlord via enum
+                bool isLandlord = loggedInUser != null && loggedInUser.Role.ToString().Equals("Landlord", StringComparison.OrdinalIgnoreCase);
 
                 // Map PropertyFormResult to Model.Property
                 _viewModel.NewProperty = new Property
@@ -55,14 +65,16 @@ namespace RentalManagementSystem.Presentation
                     Amenities = form.Amenities ?? new List<Amenities>(),
                     Notes = form.Notes ?? "",
                     Description = form.Notes ?? "",
-                    Status = string.IsNullOrEmpty(form.Status) ? "Available" : form.Status
+                    Status = string.IsNullOrEmpty(form.Status) ? "Available" : form.Status,
+
+                    // Assign LandlordId if the logged in user is a landlord
+                    LandlordId = isLandlord ? loggedInUser.UserId : (int?)null
                 };
 
                 // Execute directly to trigger MySQL INSERT
                 _viewModel.AddPropertyCommand.Execute(null);
             }
         }
-
         // ---------- Item Actions ----------
 
         private void Item_Click(object sender, RoutedEventArgs e)

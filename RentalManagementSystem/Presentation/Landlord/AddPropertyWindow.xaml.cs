@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32;
+using MySql.Data.MySqlClient; // Added for database interaction if saving directly
 using RentalManagementSystem.Model;
+using RentalManagementSystem.Services; // Assuming DatabaseHelper is here
 using RentalManagementSystem.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -17,8 +19,11 @@ namespace RentalManagementSystem.Presentation
     {
         private int _currentStep = 1;
         private readonly List<string> _uploadedPhotoPaths = new List<string>();
+        private User loggedInUser; // Track logged-in user
+
         public LandlordViewModel ViewModel { get; }
         public PropertyFormResult Result { get; private set; }
+
         public AddPropertyWindow()
         {
             InitializeComponent();
@@ -28,13 +33,21 @@ namespace RentalManagementSystem.Presentation
             UpdateStepUI();
         }
 
-        public AddPropertyWindow(LandlordViewModel viewModel)
+        public AddPropertyWindow(LandlordViewModel viewModel) : this()
         {
-            InitializeComponent();
             ViewModel = viewModel ?? new LandlordViewModel();
             DataContext = ViewModel;
+        }
 
-            UpdateStepUI();
+        // Overload to accept the logged-in user
+        public AddPropertyWindow(User loggedInUser) : this()
+        {
+            this.loggedInUser = loggedInUser;
+        }
+
+        public AddPropertyWindow(LandlordViewModel viewModel, User loggedInUser) : this(viewModel)
+        {
+            this.loggedInUser = loggedInUser;
         }
 
         #region Wizard Navigation & Step Handling
@@ -221,6 +234,24 @@ namespace RentalManagementSystem.Presentation
                     Notes = txtNotes.Text.Trim(),
                     Status = isDraft ? "Draft" : "Available"
                 };
+
+                // OPTIONAL: If you perform direct database saving here instead of just passing Result, 
+                // you can link the landlord_id using loggedInUser.UserId:
+                /*
+                bool isLandlord = loggedInUser != null && loggedInUser.Role.ToString().Equals("Landlord", StringComparison.OrdinalIgnoreCase);
+                if (isLandlord)
+                {
+                    using var conn = DatabaseHelper.GetConnection();
+                    conn.Open();
+                    string query = "INSERT INTO properties (name, monthly_rent, landlord_id, status, created_at) VALUES (@Name, @Rent, @LandlordId, @Status, NOW())";
+                    using var cmd = new MySqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@Name", Result.Name);
+                    cmd.Parameters.AddWithValue("@Rent", Result.MonthlyRent);
+                    cmd.Parameters.AddWithValue("@LandlordId", loggedInUser.UserId);
+                    cmd.Parameters.AddWithValue("@Status", Result.Status);
+                    cmd.ExecuteNonQuery();
+                }
+                */
 
                 DialogResult = true;
                 Close();

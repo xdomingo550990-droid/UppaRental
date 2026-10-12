@@ -37,15 +37,20 @@ namespace RentalManagementSystem.Presentation
             InitializeComponent();
             StartPicker.SelectedDate = DateTime.Today.AddDays(-45);
             EndPicker.SelectedDate = DateTime.Today;
-            Generate();
+            // Don't call Generate() here if it requires a logged-in user!
         }
 
         // Added : this() chaining so InitializeComponent() and controls load properly
-        public OverviewPage(User loggedInUser) : this()
+        public OverviewPage(User loggedInUser = null)
         {
+            InitializeComponent();
             this.loggedInUser = loggedInUser;
-        }
 
+            StartPicker.SelectedDate = DateTime.Today.AddDays(-45);
+            EndPicker.SelectedDate = DateTime.Today;
+
+            Generate(); // Safe to run here because loggedInUser is assigned first!
+        }
         private void GenerateButton_Click(object sender, RoutedEventArgs e) => Generate();
 
         public void SetSearch(string text)
@@ -72,33 +77,51 @@ namespace RentalManagementSystem.Presentation
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
 
-                // 1. Every non-draft property is a unit
+                // 1. Check if user is a Landlord via enum. 
+                // Note: Change `loggedInUser.Role` and `Landlord` to match your exact Enum property and enum member names.
+                bool isLandlord = loggedInUser != null && loggedInUser.Role.ToString().Equals("Landlord", StringComparison.OrdinalIgnoreCase);
+
+                // 1a. Every non-draft property is a unit (Filtered by Landlord ID if applicable)
                 var units = new Dictionary<string, (string Type, decimal Rent, DateTime Created)>(StringComparer.OrdinalIgnoreCase);
-                using (var cmd = new MySqlCommand(
-                    "SELECT name, property_type, monthly_rent, created_at FROM properties WHERE IFNULL(status, '') <> 'Draft'", conn))
-                using (var reader = cmd.ExecuteReader())
+
+                string propertyQuery = "SELECT name, property_type, monthly_rent, created_at FROM properties WHERE IFNULL(status, '') <> 'Draft'";
+                if (isLandlord)
                 {
-                    while (reader.Read())
+                    propertyQuery += " AND landlord_id = @LandlordId";
+                }
+
+                using (var cmd = new MySqlCommand(propertyQuery, conn))
+                {
+                    if (isLandlord)
                     {
-                        string name = reader["name"]?.ToString() ?? "";
-                        if (name.Length == 0) continue;
-                        units[name] = (
-                            reader["property_type"]?.ToString() ?? "Standard",
-                            reader["monthly_rent"] != DBNull.Value ? Convert.ToDecimal(reader["monthly_rent"]) : 0m,
-                            reader["created_at"] != DBNull.Value ? Convert.ToDateTime(reader["created_at"]) : DateTime.Today);
+                        // Replace `UserId` with your actual User model ID property name (e.g., Id, UserId, UserID)
+                        cmd.Parameters.AddWithValue("@LandlordId", loggedInUser.UserId);
+                    }
+
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string name = reader["name"]?.ToString() ?? "";
+                            if (name.Length == 0) continue;
+                            units[name] = (
+                                reader["property_type"]?.ToString() ?? "Standard",
+                                reader["monthly_rent"] != DBNull.Value ? Convert.ToDecimal(reader["monthly_rent"]) : 0m,
+                                reader["created_at"] != DBNull.Value ? Convert.ToDateTime(reader["created_at"]) : DateTime.Today);
+                        }
                     }
                 }
 
-                // 2. Current renters (leases): not archived, not reservations. Payment status = latest invoice for that renter + unit.
+                // 2. Current renters / leases
                 var occupied = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 const string sql = @"
-                    SELECT rr.renter_id, rr.name, rr.unit, rr.lease_start, rr.lease_end, rr.rental_term,
-                           rr.rate, rr.days, rr.created_at,
-                           (SELECT i.status FROM invoices i
-                             WHERE i.renter = rr.name AND i.unit = rr.unit
-                             ORDER BY i.due_date DESC, i.invoice_id DESC LIMIT 1) AS payment_status
-                    FROM renter_records rr
-                    WHERE rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'";
+            SELECT rr.renter_id, rr.name, rr.unit, rr.lease_start, rr.lease_end, rr.rental_term,
+                   rr.rate, rr.days, rr.created_at,
+                   (SELECT i.status FROM invoices i
+                    WHERE i.renter = rr.name AND i.unit = rr.unit
+                    ORDER BY i.due_date DESC, i.invoice_id DESC LIMIT 1) AS payment_status
+            FROM renter_records rr
+            WHERE rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'";
 
                 using (var cmd = new MySqlCommand(sql, conn))
                 using (var reader = cmd.ExecuteReader())
@@ -106,6 +129,9 @@ namespace RentalManagementSystem.Presentation
                     while (reader.Read())
                     {
                         string unit = reader["unit"]?.ToString() ?? "—";
+
+                        if (isLandlord && !units.ContainsKey(unit)) continue;
+
                         string tenant = reader["name"]?.ToString() ?? "";
                         if (string.IsNullOrWhiteSpace(tenant)) tenant = "—";
 

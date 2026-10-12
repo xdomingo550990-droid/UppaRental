@@ -134,7 +134,7 @@
                 </TextBlock>
                 <TextBlock Margin="0,18,0,0" FontSize="18" Foreground="#333333" TextAlignment="Center"
                            TextWrapping="Wrap" LineHeight="30"
-                           Text="Unified Property Rental Administration(Uppa.) is an all-in-one rental management platform that helps property owners and managers handle units, renters, reservations, billing and reports, everything in one place."/>
+                           Text="Unified Property Processing Administration(Uppa.) is an all-in-one rental management platform that helps property owners and managers handle units, renters, reservations, billing and reports, everything in one place."/>
             </StackPanel>
 
             <!-- STATS  -->

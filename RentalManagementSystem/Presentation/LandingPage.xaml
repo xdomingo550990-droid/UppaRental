@@ -115,7 +115,7 @@
                             FontWeight="SemiBold"
                             Click="SignUpButton_Click"/>
                 </StackPanel>
-                <Image Margin="0,22,205,-10" Source="/Resources/Icons/houseLogo.png" Stretch="Fill"/>
+                <Image Margin="0,25,205,17" Source="/Resources/Icons/houseLogo.png" Stretch="Fill"/>
             </Grid>
 
             <!-- Hero Section -->

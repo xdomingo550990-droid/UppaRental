@@ -29,16 +29,10 @@ namespace RentalManagementSystem.Presentation
             Loaded += (s, e) => RefreshData();
         }
 
-        /// <summary>
-        /// Public method to trigger a fresh database reload from UI/Dashboard
-        /// </summary>
+        /// <summary>Reloads the properties from the database (keeps the current chip and search).</summary>
         public void RefreshData()
         {
-            if (ViewModel != null)
-            {
-                ViewModel.LoadPropertiesFromDb();
-                BindItemsSource();
-            }
+            ViewModel?.LoadSections();
         }
 
         private void BindItemsSource()

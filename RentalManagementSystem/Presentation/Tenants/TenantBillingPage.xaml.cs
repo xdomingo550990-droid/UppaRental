@@ -187,6 +187,9 @@ namespace RentalManagementSystem.Presentation
             _historyView.Refresh();
         }
 
+        private static bool Has(string? text, string query) =>
+            !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
+
         private bool MatchesInvoice(object item)
         {
             if (item is not InvoiceRow inv) return false;
@@ -197,22 +200,28 @@ namespace RentalManagementSystem.Presentation
             string q = _globalSearchQuery;
             if (string.IsNullOrEmpty(q)) return true;
 
-            return inv.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || inv.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || inv.Unit.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+            return Has(inv.InvoiceNo, q)
+                || Has(inv.Period, q)
+                || Has(inv.Unit, q)
+                || Has(inv.Status, q)
+                || Has(inv.DueDate, q)
+                || Has(inv.AmountText, q);
         }
 
         private bool MatchesPayment(object item)
         {
             if (item is not TenantPayment p) return false;
 
-            if (string.IsNullOrEmpty(_globalSearchQuery)) return true;
+            string q = _globalSearchQuery;
+            if (string.IsNullOrEmpty(q)) return true;
 
-            return p.ReceiptNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.InvoiceNo.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Period.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Method.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase)
-                || p.Reference.Contains(_globalSearchQuery, StringComparison.OrdinalIgnoreCase);
+            return Has(p.ReceiptNo, q)
+                || Has(p.InvoiceNo, q)
+                || Has(p.Period, q)
+                || Has(p.Method, q)
+                || Has(p.Reference, q)
+                || Has(p.DatePaidText, q)
+                || Has(p.AmountText, q);
         }
 
         private void Filter_Checked(object sender, RoutedEventArgs e)

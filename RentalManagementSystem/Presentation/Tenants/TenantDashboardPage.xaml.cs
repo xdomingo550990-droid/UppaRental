@@ -59,6 +59,27 @@ namespace RentalManagementSystem.Presentation
             btnToggleSidebar.HorizontalAlignment = _sidebarCollapsed
                 ? HorizontalAlignment.Center
                 : HorizontalAlignment.Right;
+
+            SetProfileCardCollapsed(_sidebarCollapsed);
+        }
+
+        /// <summary>Shrinks the profile card to just a centered avatar when the sidebar is collapsed.</summary>
+        private void SetProfileCardCollapsed(bool collapsed)
+        {
+            btnSettings.ApplyTemplate();
+            var t = btnSettings.Template;
+
+            if (t.FindName("bg", btnSettings) is Border bg)
+                bg.Padding = collapsed ? new Thickness(0, 6, 0, 6) : new Thickness(6);
+
+            if (t.FindName("sbContent", btnSettings) is StackPanel content)
+                content.HorizontalAlignment = collapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+
+            if (t.FindName("sbAvatarBox", btnSettings) is Border avatar)
+                avatar.Margin = collapsed ? new Thickness(0) : new Thickness(0, 0, 10, 0);
+
+            if (t.FindName("sbTextPanel", btnSettings) is StackPanel text)
+                text.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         }
 
 

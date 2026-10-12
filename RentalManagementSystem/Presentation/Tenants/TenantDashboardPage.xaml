@@ -101,13 +101,14 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
                         <Border x:Name="bg" Background="#1AFFFFFF" CornerRadius="14" Padding="6"
-                                BorderBrush="Transparent" BorderThickness="1">
-                            <StackPanel Orientation="Horizontal">
-                                <Border Width="36" Height="36" CornerRadius="18" Background="{StaticResource Accent}" Margin="0,0,10,0">
+                        BorderBrush="Transparent" BorderThickness="1">
+                            <StackPanel x:Name="sbContent" Orientation="Horizontal" HorizontalAlignment="Left">
+                                <Border x:Name="sbAvatarBox" Width="36" Height="36" CornerRadius="18"
+                                Background="{StaticResource Accent}" Margin="0,0,10,0">
                                     <TextBlock Text="{TemplateBinding Tag}" Foreground="White" FontWeight="Bold" FontSize="14"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <StackPanel VerticalAlignment="Center">
+                                <StackPanel x:Name="sbTextPanel" VerticalAlignment="Center">
                                     <TextBlock Text="{TemplateBinding Content}" FontWeight="Bold" FontSize="13" Foreground="White"/>
                                     <TextBlock Text="Tenant" FontSize="11" Foreground="#A9BFAE"/>
                                 </StackPanel>
@@ -226,16 +227,19 @@
                                      Tag="&#xE787;" Content="My Reservations" Click="NavButton_Click"/>
                         <RadioButton x:Name="btnBilling" Style="{StaticResource NavItemStyle}"
                                      Tag="&#xE8C7;" Content="Billing and Payments" Click="NavButton_Click"/>
+                    </StackPanel>
+
+                    <!-- Bottom: profile card with Logout under it -->
+                    <StackPanel Grid.Row="2" Margin="0,10,0,12">
+                        <RadioButton x:Name="btnSettings"
+                                     Style="{StaticResource ProfileCardStyle}"
+                                     Content="Profile" Click="NavButton_Click"/>
 
                         <Border Style="{StaticResource NavDivider}"/>
+
                         <Button x:Name="btnLogout" Style="{StaticResource LogoutStyle}"
                                 Tag="&#xE7E8;" Content="Logout" Click="LogOutButton_Click"/>
                     </StackPanel>
-
-                    <!-- Bottom profile: click it to open the Profile page -->
-                    <RadioButton x:Name="btnSettings" Grid.Row="2" Margin="0,10,0,0"
-                                 Style="{StaticResource ProfileCardStyle}"
-                                 Content="Profile" Click="NavButton_Click"/>
                 </Grid>
             </Border>
 

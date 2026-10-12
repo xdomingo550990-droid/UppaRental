@@ -115,7 +115,7 @@ namespace RentalManagementSystem.Presentation
 
         public void ApplyGlobalSearch(string query)
         {
-            _searchQuery = query ?? "";
+            _searchQuery = query?.Trim() ?? "";
             if (_view != null)
             {
                 _view.Refresh();
@@ -127,7 +127,7 @@ namespace RentalManagementSystem.Presentation
         {
             if (sender is RadioButton rb && rb.Tag != null)
             {
-                _selectedStatusFilter = rb.Tag.ToString();
+                _selectedStatusFilter = rb.Tag.ToString() ?? "All";
                 if (_view != null)
                 {
                     _view.Refresh();
@@ -136,20 +136,28 @@ namespace RentalManagementSystem.Presentation
             }
         }
 
+        private static bool Has(string? text, string query) =>
+            !string.IsNullOrEmpty(text) && text.Contains(query, StringComparison.OrdinalIgnoreCase);
+
         private bool MatchesFilter(object item)
         {
-            if (!(item is ReservationRow res)) return false;
+            if (item is not ReservationRow res) return false;
 
             bool matchesStatus = string.Equals(_selectedStatusFilter, "All", StringComparison.OrdinalIgnoreCase) ||
                                  string.Equals(res.Status, _selectedStatusFilter, StringComparison.OrdinalIgnoreCase);
 
             if (!matchesStatus) return false;
 
-            if (string.IsNullOrWhiteSpace(_searchQuery)) return true;
+            string q = _searchQuery;
+            if (string.IsNullOrWhiteSpace(q)) return true;
 
-            return (res.ReservationNo?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                   (res.UnitLabel?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                   (res.Status?.IndexOf(_searchQuery, StringComparison.OrdinalIgnoreCase) >= 0);
+            return Has(res.ReservationNo, q)
+                || Has(res.UnitLabel, q)
+                || Has(res.Status, q)
+                || Has(res.MoveInText, q)
+                || Has(res.TermText, q)
+                || Has(res.TotalText, q)
+                || Has(res.DownText, q);
         }
         private void RefreshView()
         {

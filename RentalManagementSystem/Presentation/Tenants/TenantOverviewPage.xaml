@@ -15,6 +15,7 @@
             <SolidColorBrush x:Key="GoldBrush" Color="#E0B04A"/>
             <SolidColorBrush x:Key="CreamBrush" Color="#F6F1E3"/>
             <SolidColorBrush x:Key="SoftTextBrush" Color="#C9D6CC"/>
+            <SolidColorBrush x:Key="SectionTitleBrush" Color="#F6F1E3"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -78,11 +79,12 @@
             </StackPanel>
         </Border>
 
-        <!-- Category sections container -->
-        <Grid Grid.Row="2">
+        <!-- Category sections container (CHANGED: Grid.Row="1") -->
+        <Grid Grid.Row="1">
             <!-- Scrollable List of Posted Rooms -->
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl x:Name="icSections" Margin="0,0,8,16"
+                <!-- CHANGED: left/right margin of 24 keeps the cards off the edge -->
+                <ItemsControl x:Name="icSections" Margin="24,0,24,16"
                               ItemTemplate="{StaticResource GallerySectionTemplate}"
                               Button.Click="ReadMore_Click"/>
             </ScrollViewer>

@@ -1,5 +1,6 @@
 using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -37,7 +38,10 @@ namespace RentalManagementSystem.ViewModel
             try
             {
                 Properties.Clear();
-                foreach (var p in PropertyDao.GetAll())
+                int landlordId = UserSession.LandlordId;
+                if (landlordId <= 0) return;   // no landlord logged in: nothing to show
+
+                foreach (var p in PropertyDao.GetByLandlord(landlordId))
                     Properties.Add(p);
             }
             catch (Exception ex)

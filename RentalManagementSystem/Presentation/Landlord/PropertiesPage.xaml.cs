@@ -1,5 +1,6 @@
 ﻿#nullable disable
 using RentalManagementSystem.Model;
+using RentalManagementSystem.Services;
 using RentalManagementSystem.ViewModel;
 using System;
 using System.Collections.Generic;
@@ -46,8 +47,8 @@ namespace RentalManagementSystem.Presentation
             {
                 var form = addWindow.Result;
 
-                // Check if user is a Landlord via enum
-                bool isLandlord = loggedInUser != null && loggedInUser.Role.ToString().Equals("Landlord", StringComparison.OrdinalIgnoreCase);
+                // The owner is always the landlord in the session (this page is created without a user object)
+                int landlordId = UserSession.LandlordId;
 
                 // Map PropertyFormResult to Model.Property
                 _viewModel.NewProperty = new Property
@@ -68,7 +69,7 @@ namespace RentalManagementSystem.Presentation
                     Status = string.IsNullOrEmpty(form.Status) ? "Available" : form.Status,
 
                     // Assign LandlordId if the logged in user is a landlord
-                    LandlordId = isLandlord ? loggedInUser.UserId : (int?)null
+                    LandlordId = landlordId > 0 ? landlordId : (int?)null
                 };
 
                 // Execute directly to trigger MySQL INSERT

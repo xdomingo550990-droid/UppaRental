@@ -14,8 +14,8 @@ namespace RentalManagementSystem.DAO
         private const string DateFormat = "MMM dd, yyyy";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>All renters + reservations, newest first.</summary>
-        public static List<RenterRow> GetAll()
+        /// <summary>One landlord's renters + reservations, newest first.</summary>
+        public static List<RenterRow> GetAll(int landlordId)
         {
             var list = new List<RenterRow>();
             using var conn = DatabaseHelper.GetConnection();
@@ -27,9 +27,11 @@ namespace RentalManagementSystem.DAO
                        status, is_reservation, reservation_paid, hold_until,
                        advance_amount, deposit_amount, is_archived, move_out_date, archive_reason
                 FROM renter_records
+                WHERE landlord_id = @lid
                 ORDER BY renter_id DESC";
 
             using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@lid", landlordId);
             using DbDataReader r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -38,15 +40,16 @@ namespace RentalManagementSystem.DAO
             return list;
         }
 
-        /// <summary>Unit name to monthly rate lookup, pulled from the properties table.</summary>
-        public static Dictionary<string, decimal> GetUnitRates()
+        /// <summary>Unit name to monthly rate lookup for one landlord's properties.</summary>
+        public static Dictionary<string, decimal> GetUnitRates(int landlordId)
         {
             var map = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
             using var conn = DatabaseHelper.GetConnection();
             conn.Open();
 
-            const string sql = "SELECT name, monthly_rent FROM properties WHERE monthly_rent > 0";
+            const string sql = "SELECT name, monthly_rent FROM properties WHERE monthly_rent > 0 AND landlord_id = @lid";
             using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@lid", landlordId);
             using DbDataReader r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -65,18 +68,19 @@ namespace RentalManagementSystem.DAO
 
             const string sql = @"
                 INSERT INTO renter_records
-                    (name, unit, contact, email, address, lease_start, lease_end,
+                    (landlord_id, name, unit, contact, email, address, lease_start, lease_end,
                      rental_term, rate, months, days, status, is_reservation,
                      reservation_paid, hold_until, advance_amount, deposit_amount,
                      is_archived, move_out_date, archive_reason)
                 VALUES
-                    (@name, @unit, @contact, @email, @address, @start, @end,
+                    (@owner, @name, @unit, @contact, @email, @address, @start, @end,
                      @term, @rate, @months, @days, @status, @isRes,
                      @resPaid, @holdUntil, @advance, @deposit,
                      @archived, @moveOut, @reason)";
 
             using var cmd = new MySqlCommand(sql, conn);
             BindParameters(cmd, row);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
             row.DbId = (int)cmd.LastInsertedId;
         }
@@ -95,11 +99,12 @@ namespace RentalManagementSystem.DAO
                     status = @status, is_reservation = @isRes, reservation_paid = @resPaid,
                     hold_until = @holdUntil, advance_amount = @advance, deposit_amount = @deposit,
                     is_archived = @archived, move_out_date = @moveOut, archive_reason = @reason
-                WHERE renter_id = @id";
+                WHERE renter_id = @id AND landlord_id = @owner";
 
             using var cmd = new MySqlCommand(sql, conn);
             BindParameters(cmd, row);
             cmd.Parameters.AddWithValue("@id", row.DbId);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
         }
 
@@ -113,10 +118,11 @@ namespace RentalManagementSystem.DAO
                 UPDATE renter_records SET
                     is_archived = 1, status = 'Past',
                     move_out_date = @moveOut, archive_reason = @reason
-                WHERE renter_id = @id";
+                WHERE renter_id = @id AND landlord_id = @owner";
 
             using var cmd = new MySqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@id", renterId);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.Parameters.AddWithValue("@moveOut", moveOutDate.Date);
             cmd.Parameters.AddWithValue("@reason", reason ?? string.Empty);
             cmd.ExecuteNonQuery();

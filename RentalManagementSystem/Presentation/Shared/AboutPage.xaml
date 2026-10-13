@@ -4,6 +4,7 @@
         Title="About - Uppa Rental Management System"
         Width="1440"
         Height="900"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen">
 
 

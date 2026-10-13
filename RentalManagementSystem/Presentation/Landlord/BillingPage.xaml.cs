@@ -1,4 +1,5 @@
 using RentalManagementSystem.DAO;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -120,7 +121,10 @@ namespace RentalManagementSystem.Presentation
         {
             try
             {
-                return new ObservableCollection<InvoiceRow>(InvoiceDao.GetAll());
+                int landlordId = UserSession.LandlordId;
+                return landlordId > 0
+                    ? new ObservableCollection<InvoiceRow>(InvoiceDao.GetAll(landlordId))
+                    : new ObservableCollection<InvoiceRow>();
             }
             catch (Exception ex)
             {
@@ -133,7 +137,8 @@ namespace RentalManagementSystem.Presentation
         {
             try
             {
-                return InvoiceDao.GetRenterOptions();
+                int landlordId = UserSession.LandlordId;
+                return landlordId > 0 ? InvoiceDao.GetRenterOptions(landlordId) : new List<RenterOption>();
             }
             catch (Exception ex)
             {

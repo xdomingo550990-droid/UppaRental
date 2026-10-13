@@ -18,8 +18,8 @@ namespace RentalManagementSystem.DAO
         private const string DateFormat = "MMM dd, yyyy";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-        /// <summary>All invoices, newest due date first.</summary>
-        public static List<InvoiceRow> GetAll()
+        /// <summary>One landlord's invoices, newest due date first.</summary>
+        public static List<InvoiceRow> GetAll(int landlordId)
         {
             var list = new List<InvoiceRow>();
             using var conn = DatabaseHelper.GetConnection();
@@ -32,9 +32,11 @@ namespace RentalManagementSystem.DAO
                        i.unit, i.period, i.due_date, i.amount, i.status
                 FROM invoices i
                 LEFT JOIN users u ON u.user_id = i.user_id
+                WHERE i.landlord_id = @lid
                 ORDER BY i.due_date DESC, i.invoice_id DESC";
 
             using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@lid", landlordId);
             using DbDataReader r = cmd.ExecuteReader();
             while (r.Read())
             {
@@ -62,11 +64,12 @@ namespace RentalManagementSystem.DAO
             conn.Open();
 
             const string sql = @"
-                INSERT INTO invoices (invoice_no, user_id, renter, unit, period, due_date, amount, status)
-                VALUES (@no, @userId, @renter, @unit, @period, @due, @amount, @status)";
+                INSERT INTO invoices (landlord_id, invoice_no, user_id, renter, unit, period, due_date, amount, status)
+                VALUES (@owner, @no, @userId, @renter, @unit, @period, @due, @amount, @status)";
 
             using var cmd = new MySqlCommand(sql, conn);
             BindParameters(cmd, row);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
         }
 
@@ -80,10 +83,11 @@ namespace RentalManagementSystem.DAO
                 UPDATE invoices SET
                     user_id = @userId, renter = @renter, unit = @unit, period = @period,
                     due_date = @due, amount = @amount, status = @status
-                WHERE invoice_no = @no";
+                WHERE invoice_no = @no AND landlord_id = @owner";
 
             using var cmd = new MySqlCommand(sql, conn);
             BindParameters(cmd, row);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
         }
 
@@ -94,8 +98,9 @@ namespace RentalManagementSystem.DAO
             conn.Open();
 
             using var cmd = new MySqlCommand(
-                "DELETE FROM invoices WHERE invoice_no = @no", conn);
+                "DELETE FROM invoices WHERE invoice_no = @no AND landlord_id = @owner", conn);
             cmd.Parameters.AddWithValue("@no", invoiceNo);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             return cmd.ExecuteNonQuery() > 0;
         }
 
@@ -106,8 +111,9 @@ namespace RentalManagementSystem.DAO
             conn.Open();
 
             using var cmd = new MySqlCommand(
-                "UPDATE invoices SET status = 'Paid' WHERE invoice_no = @no", conn);
+                "UPDATE invoices SET status = 'Paid' WHERE invoice_no = @no AND landlord_id = @owner", conn);
             cmd.Parameters.AddWithValue("@no", invoiceNo);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
         }
 
@@ -135,7 +141,7 @@ namespace RentalManagementSystem.DAO
         /// Current renters (not archived, not reservations) for the billing dropdown. UserId is the
         /// tenant account whose email matches the renter's email, or null when there is no account.
         /// </summary>
-        public static List<RenterOption> GetRenterOptions()
+        public static List<RenterOption> GetRenterOptions(int landlordId)
         {
             var list = new List<RenterOption>();
             using var conn = DatabaseHelper.GetConnection();
@@ -149,10 +155,12 @@ namespace RentalManagementSystem.DAO
                            AND LOWER(TRIM(u.email_address)) = LOWER(TRIM(rr.email)) COLLATE utf8mb4_general_ci
                          ORDER BY u.user_id LIMIT 1) AS user_id
                 FROM renter_records rr
-                WHERE rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'
+                WHERE rr.landlord_id = @lid
+                  AND rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'
                 ORDER BY rr.name, rr.unit";
 
             using var cmd = new MySqlCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@lid", landlordId);
             using DbDataReader r = cmd.ExecuteReader();
             while (r.Read())
             {

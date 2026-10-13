@@ -2,6 +2,7 @@
 using RentalManagementSystem.DAO;
 using RentalManagementSystem.Model;
 using RentalManagementSystem.Presentation;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -147,9 +148,21 @@ namespace RentalManagementSystem.Presentation
     {
         public const string DefaultImage = "pack://application:,,,/Resources/Images/houseImage1.jpg";
 
-        // Loaded from the database.
+        // Loaded from the database: only the logged-in landlord's properties.
         public static ObservableCollection<RentalProperty> All { get; } =
             new ObservableCollection<RentalProperty>(Load());
+
+        /// <summary>
+        /// Re-reads the list for whoever is logged in right now. This is a static list that lives for the
+        /// whole app run, so it must be reloaded on every login/logout, otherwise the next landlord
+        /// would still see the previous landlord's properties.
+        /// </summary>
+        public static void Reload()
+        {
+            var fresh = Load();
+            All.Clear();
+            foreach (var p in fresh) All.Add(p);
+        }
 
         public static void Add(RentalProperty property)
         {
@@ -216,9 +229,12 @@ namespace RentalManagementSystem.Presentation
 
         private static List<RentalProperty> Load()
         {
+            int landlordId = UserSession.LandlordId;
+            if (landlordId <= 0) return new List<RentalProperty>();   // nobody (or a tenant) logged in: show nothing
+
             try
             {
-                return PropertyDao.GetAll().Select(FromModel).ToList();
+                return PropertyDao.GetByLandlord(landlordId).Select(FromModel).ToList();
             }
             catch (Exception ex)
             {
@@ -264,6 +280,7 @@ namespace RentalManagementSystem.Presentation
             return new Property
             {
                 PropertyId = r.DbId,
+                LandlordId = UserSession.LandlordId > 0 ? UserSession.LandlordId : (int?)null,
                 Name = r.Name,
                 Location = r.Location,
                 PropertyType = type,

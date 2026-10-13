@@ -109,7 +109,7 @@
                                 </Border>
                                 <StackPanel x:Name="sbTextPanel" VerticalAlignment="Center">
                                     <TextBlock x:Name="txtSbName" Text="Kim Vincent Domingo" FontWeight="Bold" FontSize="13" Foreground="White"/>
-                                    <TextBlock x:Name="txtSbRole" Text="Landlord • 6 units" FontSize="11" Foreground="#A9BFAE"/>
+                                    <TextBlock x:Name="txtSbRole" Text="Landlord" FontSize="11" Foreground="#A9BFAE"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

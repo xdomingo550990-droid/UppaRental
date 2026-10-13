@@ -23,6 +23,10 @@ namespace RentalManagementSystem.Presentation
         {
             InitializeComponent();
 
+            // The property list is static (lives for the whole app run): reload it for the landlord
+            // who just logged in so they never see the previous landlord's properties.
+            PropertyStore.Reload();
+
             // Overview is the page shown when the dashboard opens
             MainContentFrame.Content = new OverviewPage();
             LoadSidebarProfile();
@@ -161,8 +165,10 @@ namespace RentalManagementSystem.Presentation
             if (result != MessageBoxResult.Yes)
                 return;
 
-            // Clear session state
+            // Clear session state, including the shared session and the cached property list
             CurrentUser = null;
+            UserSession.Clear();
+            PropertyStore.Reload();
 
             var landing = new LandingPage();
             landing.Show();                    // open the landing page first...

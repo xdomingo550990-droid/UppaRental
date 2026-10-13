@@ -74,29 +74,24 @@ namespace RentalManagementSystem.Presentation
 
             try
             {
+                // Everything on this page is scoped to the landlord in the session. The page is created
+                // without a user object, so the session is the single source of truth.
+                int landlordId = UserSession.LandlordId;
+                if (landlordId <= 0) return list;   // nobody (or a tenant) logged in: show nothing
+
                 using var conn = DatabaseHelper.GetConnection();
                 conn.Open();
 
-                // 1. Check if user is a Landlord via enum. 
-                // Note: Change `loggedInUser.Role` and `Landlord` to match your exact Enum property and enum member names.
-                bool isLandlord = loggedInUser != null && loggedInUser.Role.ToString().Equals("Landlord", StringComparison.OrdinalIgnoreCase);
-
-                // 1a. Every non-draft property is a unit (Filtered by Landlord ID if applicable)
+                // 1. Every non-draft property of this landlord is a unit
                 var units = new Dictionary<string, (string Type, decimal Rent, DateTime Created)>(StringComparer.OrdinalIgnoreCase);
 
-                string propertyQuery = "SELECT name, property_type, monthly_rent, created_at FROM properties WHERE IFNULL(status, '') <> 'Draft'";
-                if (isLandlord)
-                {
-                    propertyQuery += " AND landlord_id = @LandlordId";
-                }
+                const string propertyQuery =
+                    "SELECT name, property_type, monthly_rent, created_at FROM properties " +
+                    "WHERE IFNULL(status, '') <> 'Draft' AND landlord_id = @LandlordId";
 
                 using (var cmd = new MySqlCommand(propertyQuery, conn))
                 {
-                    if (isLandlord)
-                    {
-                        // Replace `UserId` with your actual User model ID property name (e.g., Id, UserId, UserID)
-                        cmd.Parameters.AddWithValue("@LandlordId", loggedInUser.UserId);
-                    }
+                    cmd.Parameters.AddWithValue("@LandlordId", landlordId);
 
                     using (var reader = cmd.ExecuteReader())
                     {
@@ -118,19 +113,22 @@ namespace RentalManagementSystem.Presentation
             SELECT rr.renter_id, rr.name, rr.unit, rr.lease_start, rr.lease_end, rr.rental_term,
                    rr.rate, rr.days, rr.created_at,
                    (SELECT i.status FROM invoices i
-                    WHERE i.renter = rr.name AND i.unit = rr.unit
+                    WHERE i.renter = rr.name AND i.unit = rr.unit AND i.landlord_id = rr.landlord_id
                     ORDER BY i.due_date DESC, i.invoice_id DESC LIMIT 1) AS payment_status
             FROM renter_records rr
-            WHERE rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'";
+            WHERE rr.landlord_id = @LandlordId
+              AND rr.is_archived = 0 AND rr.is_reservation = 0 AND rr.status <> 'Past'";
 
                 using (var cmd = new MySqlCommand(sql, conn))
+                {
+                cmd.Parameters.AddWithValue("@LandlordId", landlordId);
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
                         string unit = reader["unit"]?.ToString() ?? "—";
 
-                        if (isLandlord && !units.ContainsKey(unit)) continue;
+                        if (!units.ContainsKey(unit)) continue;
 
                         string tenant = reader["name"]?.ToString() ?? "";
                         if (string.IsNullOrWhiteSpace(tenant)) tenant = "—";
@@ -154,6 +152,7 @@ namespace RentalManagementSystem.Presentation
 
                         occupied.Add(unit);
                     }
+                }
                 }
 
                 // 3. Units nobody currently holds show up as Vacant

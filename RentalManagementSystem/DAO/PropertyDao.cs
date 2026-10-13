@@ -19,7 +19,24 @@ namespace RentalManagementSystem.DAO
             is_water_included, water_bill, water_rate_per_cbm,
             is_wifi_included, wifi_bill, inquiry_count, created_at";
 
-        /// <summary>All properties, newest first.</summary>
+        /// <summary>Properties owned by one landlord, newest first.</summary>
+        public static List<Property> GetByLandlord(int landlordId)
+        {
+            var list = new List<Property>();
+            using var conn = DatabaseHelper.GetConnection();
+            conn.Open();
+
+            using var cmd = new MySqlCommand(
+                $"SELECT {Columns} FROM properties WHERE landlord_id = @lid ORDER BY created_at DESC, property_id DESC", conn);
+            cmd.Parameters.AddWithValue("@lid", landlordId);
+
+            using DbDataReader r = cmd.ExecuteReader();
+            while (r.Read())
+                list.Add(Map(r));
+            return list;
+        }
+
+        /// <summary>All properties of every landlord, newest first. Only for tenant-facing browsing, never for landlord pages.</summary>
         public static List<Property> GetAll()
         {
             var list = new List<Property>();
@@ -52,6 +69,9 @@ namespace RentalManagementSystem.DAO
         /// <summary>Inserts the property and writes back the generated PropertyId.</summary>
         public static void Insert(Property p)
         {
+            // A property always belongs to the landlord who is logged in.
+            if (UserSession.LandlordId > 0) p.LandlordId = UserSession.LandlordId;
+
             using var conn = DatabaseHelper.GetConnection();
             conn.Open();
 
@@ -85,7 +105,7 @@ namespace RentalManagementSystem.DAO
 
             const string sql = @"
                 UPDATE properties SET
-                    landlord_id = @landlordId, name = @name, location = @location,
+                    name = @name, location = @location,
                     number_of_rooms = @rooms, number_of_floors = @floors,
                     number_of_bathrooms = @baths, maximum_capacity = @capacity,
                     size_unit = @size, security_deposit = @deposit, monthly_rent = @rent,
@@ -94,11 +114,12 @@ namespace RentalManagementSystem.DAO
                     is_electric_included = @elecInc, electric_bill = @elecBill, electric_kwh_rate = @elecRate,
                     is_water_included = @waterInc, water_bill = @waterBill, water_rate_per_cbm = @waterRate,
                     is_wifi_included = @wifiInc, wifi_bill = @wifiBill, inquiry_count = @inquiries
-                WHERE property_id = @id";
+                WHERE property_id = @id AND landlord_id = @owner";
 
             using var cmd = new MySqlCommand(sql, conn);
             BindParameters(cmd, p);
             cmd.Parameters.AddWithValue("@id", p.PropertyId);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             cmd.ExecuteNonQuery();
         }
 
@@ -109,16 +130,17 @@ namespace RentalManagementSystem.DAO
             conn.Open();
 
             using var cmd = new MySqlCommand(
-                "DELETE FROM properties WHERE property_id = @id", conn);
+                "DELETE FROM properties WHERE property_id = @id AND landlord_id = @owner", conn);
             cmd.Parameters.AddWithValue("@id", propertyId);
+            cmd.Parameters.AddWithValue("@owner", UserSession.LandlordId);
             return cmd.ExecuteNonQuery() > 0;
         }
 
         /// <summary>
-        /// Sets status (Available / Reserved / Occupied) for properties matched by name.
+        /// Sets status (Available / Reserved / Occupied) for one landlord's properties matched by name.
         /// Draft properties are left alone, and unchanged rows are not touched.
         /// </summary>
-        public static void UpdateStatuses(IDictionary<string, string> statusByName)
+        public static void UpdateStatuses(int landlordId, IDictionary<string, string> statusByName)
         {
             using var conn = DatabaseHelper.GetConnection();
             conn.Open();
@@ -126,7 +148,8 @@ namespace RentalManagementSystem.DAO
             foreach (var kv in statusByName)
             {
                 using var cmd = new MySqlCommand(
-                    "UPDATE properties SET status = @s WHERE name = @n AND IFNULL(status, '') <> 'Draft' AND IFNULL(status, '') <> @s", conn);
+                    "UPDATE properties SET status = @s WHERE name = @n AND landlord_id = @lid AND IFNULL(status, '') <> 'Draft' AND IFNULL(status, '') <> @s", conn);
+                cmd.Parameters.AddWithValue("@lid", landlordId);
                 cmd.Parameters.AddWithValue("@s", kv.Value);
                 cmd.Parameters.AddWithValue("@n", kv.Key);
                 cmd.ExecuteNonQuery();

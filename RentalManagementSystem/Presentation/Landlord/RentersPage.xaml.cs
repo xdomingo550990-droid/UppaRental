@@ -1,4 +1,5 @@
 ﻿using RentalManagementSystem.DAO;
+using RentalManagementSystem.Services;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -136,8 +137,9 @@ namespace RentalManagementSystem.Presentation
         private const string DateFormat = "MMM dd, yyyy";
         private const string AllUnits = "All Properties / Units";
 
-        // Monthly rate of every unit, loaded from the properties table.
-        private static readonly Dictionary<string, decimal> UnitRates = LoadUnitRates();
+        // Monthly rate of every unit of the logged-in landlord. Per page instance (not static) so a
+        // different landlord logging in during the same app run never sees the previous one's units.
+        private readonly Dictionary<string, decimal> UnitRates = LoadUnitRates();
         private readonly string[] _statuses = { "Active", "Pending", "Past" };
 
         /// <summary>Available / Reserved / Occupied for every unit, recalculated whenever a record changes.</summary>
@@ -164,8 +166,12 @@ namespace RentalManagementSystem.Presentation
         {
             try
             {
-                var rates = RenterDao.GetUnitRates();
-                if (rates.Count > 0) return rates;
+                int landlordId = UserSession.LandlordId;
+                if (landlordId > 0)
+                {
+                    var rates = RenterDao.GetUnitRates(landlordId);
+                    if (rates.Count > 0) return rates;
+                }
             }
             catch (Exception ex)
             {
@@ -181,7 +187,8 @@ namespace RentalManagementSystem.Presentation
         {
             try
             {
-                var rows = RenterDao.GetAll();
+                int landlordId = UserSession.LandlordId;
+                var rows = landlordId > 0 ? RenterDao.GetAll(landlordId) : new List<RenterRow>();
                 _rentersLoadedOk = true;
                 return new ObservableCollection<RenterRow>(rows);
             }
@@ -291,7 +298,7 @@ namespace RentalManagementSystem.Presentation
 
             try
             {
-                PropertyDao.UpdateStatuses(_unitStatus);
+                PropertyDao.UpdateStatuses(UserSession.LandlordId, _unitStatus);
                 PropertyStore.SyncStatuses(_unitStatus);
             }
             catch (Exception ex)

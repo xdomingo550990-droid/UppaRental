@@ -221,16 +221,16 @@
                                  Tag="&#xE8C7;" Content="Billing and Payments" Click="NavButton_Click"/>
                 </StackPanel>
 
-                <!-- Bottom: profile card with Logout under it -->
+                <!-- Bottom: Logout on top, profile card underneath -->
                 <StackPanel Grid.Row="2" Margin="0,10,0,12">
-                    <RadioButton x:Name="btnSettings"
-                                 Style="{StaticResource ProfileCardStyle}"
-                                 Content="Profile" Click="NavButton_Click"/>
+                    <Button x:Name="btnLogout" Style="{StaticResource LogoutStyle}"
+            Tag="&#xE7E8;" Content="Logout" Click="LogOutButton_Click"/>
 
                     <Border Style="{StaticResource NavDivider}"/>
 
-                    <Button x:Name="btnLogout" Style="{StaticResource LogoutStyle}"
-                            Tag="&#xE7E8;" Content="Logout" Click="LogOutButton_Click"/>
+                    <RadioButton x:Name="btnSettings"
+                 Style="{StaticResource ProfileCardStyle}"
+                 Content="Profile" Click="NavButton_Click"/>
                 </StackPanel>
             </Grid>
         </Border>
